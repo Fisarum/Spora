@@ -102,3 +102,13 @@ export const settingsApi = {
 
   stopGateway: (): Promise<void> => invoke("stop_gateway"),
 };
+
+export const updaterApi = {
+  checkForUpdates: (): Promise<string | null> => invoke("check_for_updates"),
+
+  downloadUpdate: (): Promise<void> => invoke("download_update"),
+
+  installAndRestart: (): Promise<void> => invoke("install_and_restart"),
+
+  getCurrentVersion: (): Promise<string> => invoke("get_current_version"),
+};

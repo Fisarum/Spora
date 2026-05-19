@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import logo from "../src-tauri/assets/logo.png";
-import { Wallet, BarChart3, Settings } from "lucide-react";
+import { Wallet, BarChart3, Settings, X, Download } from "lucide-react";
 import KeysWallet from "./components/KeysWallet/KeysWallet";
 import Analytics from "./components/Analytics/Analytics";
 import SettingsTab from "./components/Settings/SettingsTab";
-import { settingsApi } from "./lib/tauri";
+import { settingsApi, updaterApi } from "./lib/tauri";
+import { listen } from "@tauri-apps/api/event";
 
 type Tab = "keys" | "analytics" | "settings";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("keys");
   const [, setGatewayRunning] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
 
   useEffect(() => {
     settingsApi
@@ -19,7 +23,50 @@ export default function App() {
         setGatewayRunning(running);
       })
       .catch(() => {});
+
+    // Check for updates on startup
+    checkForUpdates();
+
+    // Set up periodic update check (every 24 hours)
+    const interval = setInterval(checkForUpdates, 24 * 60 * 60 * 1000);
+
+    // Listen for update events
+    const unlistenProgress = listen<number>("update-progress", (event) => {
+      console.log("Update progress:", event.payload);
+    });
+
+    const unlistenDownloaded = listen("update-downloaded", () => {
+      console.log("Update downloaded");
+    });
+
+    return () => {
+      clearInterval(interval);
+      unlistenProgress.then((fn) => fn());
+      unlistenDownloaded.then((fn) => fn());
+    };
   }, []);
+
+  async function checkForUpdates() {
+    try {
+      const version = await updaterApi.checkForUpdates();
+      if (version) {
+        setUpdateAvailable(true);
+        setUpdateVersion(version);
+        setShowUpdateBanner(true);
+      }
+    } catch (e) {
+      console.error("Failed to check for updates:", e);
+    }
+  }
+
+  async function handleDownloadUpdate() {
+    try {
+      await updaterApi.downloadUpdate();
+      setShowUpdateBanner(false);
+    } catch (e) {
+      console.error("Failed to download update:", e);
+    }
+  }
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "keys", label: "Keys Wallet", icon: <Wallet size={16} /> },
@@ -41,6 +88,32 @@ export default function App() {
           </span>
         </div>
       </div>
+
+      {/* Update Notification Banner */}
+      {showUpdateBanner && updateAvailable && (
+        <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-b border-primary/20">
+          <div className="flex items-center gap-3">
+            <Download size={16} className="text-primary" />
+            <span className="text-sm text-foreground/80">
+              Update available: version {updateVersion}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadUpdate}
+              className="px-3 py-1.5 text-xs uppercase tracking-wider bg-primary text-background rounded hover:bg-primary/90 transition-all"
+            >
+              Download
+            </button>
+            <button
+              onClick={() => setShowUpdateBanner(false)}
+              className="p-1.5 text-foreground/40 hover:text-foreground/60 transition-all"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 px-4 pt-2 pb-0 border-b border-primary/5">

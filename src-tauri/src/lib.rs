@@ -18,6 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()
                 .expect("Failed to get app data dir");
@@ -65,6 +66,10 @@ pub fn run() {
             commands::settings::get_gateway_status,
             commands::settings::start_gateway,
             commands::settings::stop_gateway,
+            commands::updater::check_for_updates,
+            commands::updater::download_update,
+            commands::updater::install_and_restart,
+            commands::updater::get_current_version,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

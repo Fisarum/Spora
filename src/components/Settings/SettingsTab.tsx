@@ -7,9 +7,12 @@ import {
   Server,
   Shield,
   Loader2,
+  Upload,
+  CheckCircle,
 } from "lucide-react";
-import { settingsApi } from "../../lib/tauri";
+import { settingsApi, updaterApi } from "../../lib/tauri";
 import type { GatewaySettings } from "../../lib/types";
+import { listen } from "@tauri-apps/api/event";
 
 interface Props {
   onGatewayStatusChange: (running: boolean, port: number) => void;
@@ -28,10 +31,46 @@ export default function SettingsTab({ onGatewayStatusChange }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  
+  // Update state
+  const [currentVersion, setCurrentVersion] = useState<string>("");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [downloadingUpdate, setDownloadingUpdate] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [updateDownloaded, setUpdateDownloaded] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    loadCurrentVersion();
+    setupUpdateListeners();
   }, []);
+
+  async function loadCurrentVersion() {
+    try {
+      const version = await updaterApi.getCurrentVersion();
+      setCurrentVersion(version);
+    } catch (e) {
+      console.error("Failed to get current version:", e);
+    }
+  }
+
+  function setupUpdateListeners() {
+    const unlistenProgress = listen<number>("update-progress", (event) => {
+      setDownloadProgress(event.payload);
+    });
+
+    const unlistenDownloaded = listen("update-downloaded", () => {
+      setDownloadingUpdate(false);
+      setUpdateDownloaded(true);
+    });
+
+    return () => {
+      unlistenProgress.then((fn) => fn());
+      unlistenDownloaded.then((fn) => fn());
+    };
+  }
 
   async function loadSettings() {
     setLoading(true);
@@ -68,6 +107,44 @@ export default function SettingsTab({ onGatewayStatusChange }: Props) {
       await settingsApi.exportLogs("spora_logs_export.json");
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function handleCheckForUpdates() {
+    setCheckingUpdate(true);
+    try {
+      const version = await updaterApi.checkForUpdates();
+      if (version) {
+        setUpdateAvailable(true);
+        setUpdateVersion(version);
+      } else {
+        setUpdateAvailable(false);
+        setUpdateVersion(null);
+      }
+    } catch (e) {
+      console.error("Failed to check for updates:", e);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
+
+  async function handleDownloadUpdate() {
+    setDownloadingUpdate(true);
+    setDownloadProgress(0);
+    setUpdateDownloaded(false);
+    try {
+      await updaterApi.downloadUpdate();
+    } catch (e) {
+      console.error("Failed to download update:", e);
+      setDownloadingUpdate(false);
+    }
+  }
+
+  async function handleInstallAndRestart() {
+    try {
+      await updaterApi.installAndRestart();
+    } catch (e) {
+      console.error("Failed to install update:", e);
     }
   }
 
@@ -267,6 +344,88 @@ export default function SettingsTab({ onGatewayStatusChange }: Props) {
                 Export Audit Logs
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* Updates */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-3 border-b border-primary/10 pb-3">
+            <Upload size={20} className="text-primary" />
+            <h3 className="text-sm tracking-[0.2em] text-primary uppercase font-medium">Updates</h3>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-6 rounded bg-white/2 border border-white/5">
+              <div className="space-y-1">
+                <div className="text-xs text-foreground/40 uppercase tracking-wider">Current Version</div>
+                <div className="text-lg font-medium text-foreground">{currentVersion || "Loading..."}</div>
+              </div>
+              <button
+                onClick={handleCheckForUpdates}
+                disabled={checkingUpdate}
+                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider border border-white/10 text-foreground/40 hover:text-foreground/70 hover:bg-white/5 transition-all rounded disabled:opacity-50"
+              >
+                {checkingUpdate ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={14} />
+                )}
+                Check for Updates
+              </button>
+            </div>
+
+            {updateAvailable && updateVersion && (
+              <div className="p-6 rounded bg-primary/5 border border-primary/20 space-y-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle size={20} className="text-primary" />
+                  <div>
+                    <div className="text-sm font-medium text-foreground/80">Update Available</div>
+                    <div className="text-xs text-foreground/40">Version {updateVersion} is ready to download</div>
+                  </div>
+                </div>
+
+                {!updateDownloaded ? (
+                  <>
+                    {!downloadingUpdate ? (
+                      <button
+                        onClick={handleDownloadUpdate}
+                        className="w-full py-3 text-xs uppercase tracking-wider bg-primary text-background rounded hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Download size={16} />
+                        Download Update
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-foreground/40">
+                          <span>Downloading...</span>
+                          <span>{Math.round(downloadProgress)}%</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all duration-300"
+                            style={{ width: `${downloadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    onClick={handleInstallAndRestart}
+                    className="w-full py-3 text-xs uppercase tracking-wider bg-primary text-background rounded hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Install & Restart
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!updateAvailable && !checkingUpdate && (
+              <div className="p-6 rounded bg-white/2 border border-white/5 text-center">
+                <div className="text-sm text-foreground/40">You're using the latest version</div>
+              </div>
+            )}
           </div>
         </section>
 

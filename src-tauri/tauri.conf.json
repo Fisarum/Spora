@@ -40,5 +40,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Fisarum/Spora/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM3MEI0N0NGQjFFRUE3NDcKUldSSHArNnh6MGNMTjdLSDVyMmhUcm1kV2FmdGd0eUhWSG05dlMxQTB4eFVSRVJQcjFGbGhTQW4K"
+    }
   }
 }
