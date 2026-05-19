@@ -33,6 +33,8 @@ export interface RequestLog {
   latencyMs: number;
   statusCode: number;
   ts: number;
+  requestBody?: string;
+  responseBody?: string;
 }
 
 export interface UsageStats {

@@ -162,9 +162,13 @@ async fn chat_completions(
         let db = s.db.lock().unwrap();
         let log_id = Uuid::new_v4().to_string();
         let ts = chrono::Utc::now().timestamp();
+        
+        let req_body_str = serde_json::to_string(&body).unwrap_or_default();
+        let res_body_str = response_body.as_ref().map(|b| serde_json::to_string(b).unwrap_or_default());
+
         let _ = db.execute(
-            "INSERT INTO request_logs (id, spora_key_id, provider, model, prompt_tokens, completion_tokens, cost_usd, latency_ms, status_code, ts)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            "INSERT INTO request_logs (id, spora_key_id, provider, model, prompt_tokens, completion_tokens, cost_usd, latency_ms, status_code, ts, request_body, response_body)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             rusqlite::params![
                 log_id,
                 if spora_key_id.is_empty() { None } else { Some(&spora_key_id) },
@@ -176,6 +180,8 @@ async fn chat_completions(
                 latency_ms,
                 status_code as i64,
                 ts,
+                req_body_str,
+                res_body_str,
             ],
         );
     }

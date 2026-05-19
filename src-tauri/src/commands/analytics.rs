@@ -79,6 +79,10 @@ pub struct RequestLog {
     #[serde(rename = "statusCode")]
     pub status_code: i64,
     pub ts: i64,
+    #[serde(rename = "requestBody")]
+    pub request_body: Option<String>,
+    #[serde(rename = "responseBody")]
+    pub response_body: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -241,7 +245,7 @@ pub async fn get_request_logs(
 
     let mut stmt = db.prepare(
         "SELECT r.id, r.spora_key_id, k.label, r.provider, r.model,
-                r.prompt_tokens, r.completion_tokens, r.cost_usd, r.latency_ms, r.status_code, r.ts
+                r.prompt_tokens, r.completion_tokens, r.cost_usd, r.latency_ms, r.status_code, r.ts, r.request_body, r.response_body
          FROM request_logs r LEFT JOIN spora_keys k ON k.id = r.spora_key_id
          ORDER BY r.ts DESC LIMIT ?1 OFFSET ?2"
     )?;
@@ -259,6 +263,8 @@ pub async fn get_request_logs(
             latency_ms: row.get(8)?,
             status_code: row.get(9)?,
             ts: row.get(10)?,
+            request_body: row.get(11)?,
+            response_body: row.get(12)?,
         })
     })?.collect::<rusqlite::Result<Vec<_>>>()?;
 

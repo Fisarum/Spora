@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -160,6 +160,7 @@ export default function Analytics() {
   const [logs, setLogs] = useState<RequestLog[]>([]);
   const [totalLogs, setTotalLogs] = useState(0);
   const [logPage, setLogPage] = useState(0);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState<"cost" | "requests">("cost");
   const LOG_PAGE_SIZE = 15;
@@ -523,52 +524,96 @@ export default function Analytics() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-b border-white/3 hover:bg-white/2 transition-all"
-                  >
-                    <td className="px-4 py-1.5 text-foreground/40 whitespace-nowrap">
-                      {new Date(log.ts * 1000).toLocaleTimeString()}
-                    </td>
-                    <td className="px-4 py-1.5 text-foreground/60 max-w-[100px] truncate">
-                      {log.sporaKeyLabel ?? "—"}
-                    </td>
-                    <td className="px-4 py-1.5">
-                      <span
-                        className="px-1.5 py-0.5 rounded text-[9px]"
-                        style={{
-                          background: `${PROVIDER_COLORS[log.provider]}10`,
-                          color: PROVIDER_COLORS[log.provider],
-                          border: `1px solid ${PROVIDER_COLORS[log.provider]}20`
-                        }}
-                      >
-                        {log.provider}
-                      </span>
-                    </td>
-                    <td className="px-4 py-1.5 text-foreground/50 max-w-[120px] truncate">{log.model}</td>
-                    <td className="px-4 py-1.5 text-right text-foreground/50">
-                      {(log.promptTokens + log.completionTokens).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-1.5 text-right text-foreground/50">
-                      ${log.costUsd.toFixed(5)}
-                    </td>
-                    <td className="px-4 py-1.5 text-right text-foreground/50">
-                      {log.latencyMs}ms
-                    </td>
-                    <td className="px-4 py-1.5 text-right">
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[9px] ${
-                          log.statusCode < 300
-                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                            : log.statusCode < 500
-                            ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                            : "bg-red-500/10 text-red-500 border border-red-500/20"
-                        }`}
-                      >
-                        {log.statusCode}
-                      </span>
-                    </td>
-                  </tr>
+                  <React.Fragment key={log.id}>
+                    <tr
+                      onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
+                      className={`border-b border-white/3 hover:bg-white/2 transition-all cursor-pointer ${
+                        expandedLogId === log.id ? "bg-white/5" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-1.5 text-foreground/40 whitespace-nowrap">
+                        {new Date(log.ts * 1000).toLocaleTimeString()}
+                      </td>
+                      <td className="px-4 py-1.5 text-foreground/60 max-w-[100px] truncate">
+                        {log.sporaKeyLabel ?? "—"}
+                      </td>
+                      <td className="px-4 py-1.5">
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[9px]"
+                          style={{
+                            background: `${PROVIDER_COLORS[log.provider] ?? "#fff"}10`,
+                            color: PROVIDER_COLORS[log.provider] ?? "#fff",
+                            border: `1px solid ${PROVIDER_COLORS[log.provider] ?? "#fff"}20`
+                          }}
+                        >
+                          {log.provider}
+                        </span>
+                      </td>
+                      <td className="px-4 py-1.5 text-foreground/50 max-w-[120px] truncate">{log.model}</td>
+                      <td className="px-4 py-1.5 text-right text-foreground/50">
+                        {(log.promptTokens + log.completionTokens).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-1.5 text-right text-foreground/50">
+                        ${log.costUsd.toFixed(5)}
+                      </td>
+                      <td className="px-4 py-1.5 text-right text-foreground/50">
+                        {log.latencyMs}ms
+                      </td>
+                      <td className="px-4 py-1.5 text-right">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] ${
+                            log.statusCode < 300
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              : log.statusCode < 500
+                              ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                              : "bg-red-500/10 text-red-500 border border-red-500/20"
+                          }`}
+                        >
+                          {log.statusCode}
+                        </span>
+                      </td>
+                    </tr>
+                    {expandedLogId === log.id && (
+                      <tr className="bg-[#0f0f0f] border-b border-white/5">
+                        <td colSpan={8} className="p-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col h-full max-h-96">
+                              <h4 className="text-[10px] text-foreground/40 mb-2 font-medium uppercase tracking-wider">Request Payload</h4>
+                              <div className="bg-black/50 border border-white/5 rounded overflow-y-auto p-3 flex-1">
+                                <pre className="text-[10px] text-foreground/70 whitespace-pre-wrap font-mono break-all">
+                                  {log.requestBody
+                                    ? (() => {
+                                        try {
+                                          return JSON.stringify(JSON.parse(log.requestBody), null, 2);
+                                        } catch {
+                                          return log.requestBody;
+                                        }
+                                      })()
+                                    : "No request body captured"}
+                                </pre>
+                              </div>
+                            </div>
+                            <div className="flex flex-col h-full max-h-96">
+                              <h4 className="text-[10px] text-foreground/40 mb-2 font-medium uppercase tracking-wider">Response Payload</h4>
+                              <div className="bg-black/50 border border-white/5 rounded overflow-y-auto p-3 flex-1">
+                                <pre className="text-[10px] text-foreground/70 whitespace-pre-wrap font-mono break-all">
+                                  {log.responseBody
+                                    ? (() => {
+                                        try {
+                                          return JSON.stringify(JSON.parse(log.responseBody), null, 2);
+                                        } catch {
+                                          return log.responseBody;
+                                        }
+                                      })()
+                                    : "No response body captured"}
+                                </pre>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               )}
             </tbody>

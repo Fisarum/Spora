@@ -30,7 +30,9 @@ CREATE TABLE IF NOT EXISTS request_logs (
     cost_usd            REAL NOT NULL DEFAULT 0.0,
     latency_ms          INTEGER NOT NULL DEFAULT 0,
     status_code         INTEGER NOT NULL DEFAULT 200,
-    ts                  INTEGER NOT NULL
+    ts                  INTEGER NOT NULL,
+    request_body        TEXT,
+    response_body       TEXT
 );
 
 CREATE TABLE IF NOT EXISTS settings (
