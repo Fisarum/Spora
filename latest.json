@@ -1,0 +1,11 @@
+{
+  "version": "0.1.1",
+  "notes": "## 🚀 New Features\n\n### Automatic Updates\n- **Background Update Checking**: App now automatically checks for updates every 24 hours\n- **Manual Update Check**: Check for updates manually in the Settings tab\n- **Update Notification**: Banner notification appears when a new version is available\n- **Download Progress**: Visual progress bar during update download\n- **One-Click Install**: Install and restart with a single button click\n\n### UI Improvements\n- Added Updates section in Settings with current version display, check button, download progress, and install button\n- Update notification banner in main app window\n\n## 🔧 Technical Changes\n\n### Backend\n- Added `tauri-plugin-updater` integration\n- Created updater commands for checking, downloading, and installing updates\n- Configured updater with GitHub release endpoint\n- Added signing key support for secure updates\n\n### Frontend\n- Added `updaterApi` to Tauri API bindings\n- Implemented event listeners for update progress and download completion\n- Added update state management throughout the app",
+  "pub_date": "2026-05-20T00:00:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSSHArNnh6MGNMTjhRbFA5WmJmVzIxZklxRU0zVGc5MVJCU1dFQXRLSVQ4NmNIWU5jclFYeWU2TkxacHBFaE9rdU5WdC9lQUhna3AyeXYrTi9zajhCWWYwKzdpYmQvUGdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5MjI2MjY4CWZpbGU6U3BvcmFfMC4xLjFfYWFyY2g2NC5kbWcKbVFsNEZieFNOcG5VQ3B1OXcydWNqcUlPekdTWU93ZE1DeVUrWlo4N29HNXZNWEpSbjZ6NUpnSkpGZm1UdlhWMmdoOUNTR01mZitqOW1SVkVDcEdCQnc9PQo=",
+      "url": "https://github.com/Fisarum/Spora/releases/download/v0.1.1/Spora_0.1.1_aarch64.dmg"
+    }
+  }
+}
