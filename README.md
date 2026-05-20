@@ -1,6 +1,21 @@
-# Spora
+<p align="center">
+  <img src="src-tauri/assets/logo.png" width="140" />
+</p>
 
-The "Zero-Latency" Local Vault for AI Agentic Workflows.
+<h1 align="center">Spora</h1>
+
+<p align="center">
+  The "Zero-Latency" Local Vault for AI Agentic Workflows.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" />
+  <img src="https://img.shields.io/badge/version-v0.1.0-blue" />
+</p>
+
+---
+
 
 Spora is a local-first, OpenAI-compatible AI gateway and API key wallet designed for developers who demand the highest performance and absolute privacy. Built from the ground up in Rust (Axum) and Tauri v2, Spora eliminates the latency bottlenecks of Python-based gateways while keeping your data strictly on your machine.
 
