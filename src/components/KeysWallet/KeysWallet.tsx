@@ -19,6 +19,7 @@ const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string 
   openai: { name: "OpenAI", color: "text-primary", bg: "bg-primary/10" },
   anthropic: { name: "Anthropic", color: "text-primary", bg: "bg-primary/10" },
   gemini: { name: "Gemini", color: "text-primary", bg: "bg-primary/10" },
+  openrouter: { name: "OpenRouter", color: "text-primary", bg: "bg-primary/10" },
 };
 
 interface Props {

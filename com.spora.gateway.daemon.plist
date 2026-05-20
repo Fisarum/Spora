@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.spora.gateway.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/Spora.app/Contents/MacOS/spora-daemon</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/REPLACE_WITH_YOUR_USER/Library/Logs/spora-daemon.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/REPLACE_WITH_YOUR_USER/Library/Logs/spora-daemon-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RUST_LOG</key>
+        <string>spora_daemon=info,spora_lib=info</string>
+    </dict>
+</dict>
+</plist>

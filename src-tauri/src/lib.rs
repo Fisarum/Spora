@@ -1,8 +1,8 @@
-mod db;
-mod proxy;
+pub mod db;
+pub mod proxy;
 mod commands;
-mod state;
-mod error;
+pub mod state;
+pub mod error;
 
 use tauri::Manager;
 use std::sync::Arc;

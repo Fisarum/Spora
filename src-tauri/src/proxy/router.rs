@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::state::AppState;
 use crate::proxy::middleware::{extract_spora_key, resolve_provider_key, resolve_provider_key_for_model, check_spend_cap};
-use crate::proxy::adapters::{openai, anthropic, gemini};
+use crate::proxy::adapters::{openai, anthropic, gemini, openrouter};
 
 #[derive(Clone)]
 pub struct ProxyState {
@@ -65,6 +65,7 @@ async fn list_models(
                 {"id": "claude-3-haiku-20240307", "object": "model", "provider": "anthropic"},
                 {"id": "gemini-1.5-pro", "object": "model", "provider": "gemini"},
                 {"id": "gemini-1.5-flash", "object": "model", "provider": "gemini"},
+                {"id": "openrouter/auto", "object": "model", "provider": "openrouter"},
             ]
         })).into_response()
     }
@@ -131,6 +132,7 @@ async fn chat_completions(
             "openai" => openai::forward(&http_client, &api_key, &body).await,
             "anthropic" => anthropic::forward(&http_client, &api_key, &body).await,
             "gemini" => gemini::forward(&http_client, &api_key, &body).await,
+            "openrouter" => openrouter::forward(&http_client, &api_key, &body).await,
             _ => openai::forward(&http_client, &api_key, &body).await,
         };
 

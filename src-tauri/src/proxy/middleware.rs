@@ -22,6 +22,8 @@ pub fn infer_provider_from_model(model: &str) -> &'static str {
         "anthropic"
     } else if m.starts_with("gemini") {
         "gemini"
+    } else if m.starts_with("openrouter/") {
+        "openrouter"
     } else {
         "openai"
     }

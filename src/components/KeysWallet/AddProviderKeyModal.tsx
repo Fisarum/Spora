@@ -7,6 +7,7 @@ const PROVIDERS: { id: Provider; name: string; placeholder: string }[] = [
   { id: "openai", name: "OpenAI", placeholder: "sk-..." },
   { id: "anthropic", name: "Anthropic", placeholder: "sk-ant-..." },
   { id: "gemini", name: "Google Gemini", placeholder: "AIza..." },
+  { id: "openrouter", name: "OpenRouter", placeholder: "sk-or-v1-..." },
 ];
 
 interface Props {
@@ -58,7 +59,7 @@ export default function AddProviderKeyModal({ onClose, onAdded }: Props) {
             <label className="block text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-medium">
               Provider
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {PROVIDERS.map((p) => (
                 <button
                   key={p.id}

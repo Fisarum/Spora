@@ -1,0 +1,15 @@
+[Unit]
+Description=Spora Gateway Daemon
+Documentation=https://github.com/Fisarum/Spora
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/spora-daemon
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target

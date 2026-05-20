@@ -3,7 +3,7 @@ import { X, Loader2 } from "lucide-react";
 import { keysApi } from "../../lib/tauri";
 import type { Provider, SporaKey } from "../../lib/types";
 
-const ALL_PROVIDERS: Provider[] = ["openai", "anthropic", "gemini"];
+const ALL_PROVIDERS: Provider[] = ["openai", "anthropic", "gemini", "openrouter"];
 
 interface Props {
   onClose: () => void;
