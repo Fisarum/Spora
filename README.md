@@ -1,93 +1,85 @@
 <p align="center">
-  <img src="src-tauri/assets/logo.png" width="140" />
+  <img src="src-tauri/assets/logo.png" width="140" alt="Spora Logo" />
 </p>
 
 <h1 align="center">Spora</h1>
 
 <p align="center">
-  The "Zero-Latency" Local Vault for AI Agentic Workflows.
+  <b>High Performance Local AI Gateway and API Key Wallet</b>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-green" />
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" />
-  <img src="https://img.shields.io/badge/version-v0.1.0-blue" />
+  <img src="https://img.shields.io/badge/license-MIT-white?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-white?style=flat-square" alt="Platforms" />
+  <img src="https://img.shields.io/badge/version-v0.1.3-blue?style=flat-square" alt="Version" />
 </p>
 
----
-
-
-Spora is a local-first, OpenAI-compatible AI gateway and API key wallet designed for developers who demand the highest performance and absolute privacy. Built from the ground up in Rust (Axum) and Tauri v2, Spora eliminates the latency bottlenecks of Python-based gateways while keeping your data strictly on your machine.
+Spora is a local-first, AI gateway and API key wallet designed for developers who demand the highest performance and absolute privacy. Built from the ground up in Rust (Axum) and Tauri v2, Spora eliminates the latency bottlenecks of Python-based gateways while keeping your data strictly on your machine.
 
 The performance of an enterprise gateway with the privacy of a local wallet.
 
-# Core Values
+## Principles of Design
 
-### Data Sovereignty and Security
-Your prompts, your keys, your infrastructure. Spora brings zero-trust security to your local agentic workflows. All sensitive data is stored in a hardened local SQLite vault. By using the OS Keychain and SQLCipher architecture, Spora ensures that nothing leaves your machine.
+### Data Sovereignty
+Your prompts and secrets never leave your infrastructure. Spora employs a local first architecture where all provider keys and usage logs are stored in a hardened SQLite vault on your machine. This zero trust approach ensures that sensitive intellectual property remains private even when using public LLM providers.
 
-### Zero-Latency Performance
-Leveraging Rust's memory safety and speed, Spora provides a high-performance alternative to existing tools. While Python-based solutions hit a latency ceiling, Spora is optimized for the speed required by modern autonomous agents and real-time IDE interactions.
+### High Fidelity Performance
+While Python based gateways often introduce significant latency overhead, Spora is engineered in Rust to handle high frequency requests from autonomous agents and real time IDE integrations. It is optimized for the sub second responsiveness required by modern agentic frameworks.
 
-### Agent and IDE Ready
-One Spora key to rule them all. Seamlessly switch between 100+ models in your favorite IDE. Spora acts as a drop-in replacement for the OpenAI SDK. Simply change your base URL and you are ready to use Spora with Cursor, Claude Code, and any other autonomous agent.
+### Unified Developer Experience
+Integrate Spora once and access over 100 models from OpenAI, Anthropic, Gemini, and OpenRouter. It serves as a drop in replacement for standard SDK compatible tools. Simply point your base URL to the local proxy and manage all model routing through a single Sk-Spora token.
 
-# The Prosumer Dashboard
+## Technical Capabilities
 
-Spora distinguishes itself with a powerful analytics panel designed for granular observability.
-*   Real-time Cost Accounting: Track every token and cent to avoid surprise API bills.
-*   Granular Observability: Detailed audit logs and performance metrics for all your local AI traffic.
-*   Zero-Config UI: A beautiful, modern interface that works out of the box.
+### Intelligent Analytics Dashboard
+Monitor your AI infrastructure with a high fidelity observability suite designed for transparency.
+* **Real Time Cost Tracking**: Granular accounting for every token and request to prevent unforeseen expenses.
+* **Dynamic Interaction**: Interactive metric cards that update instantly on hover to show specific model performance.
+* **Long Term Insight**: Integrated 365 day activity heatmap for visualizing usage patterns over time.
+* **Multi Dimensional Filters**: Analyze data by model, provider, or specific Spora keys across 17 timeframe ranges.
 
-# Quick Start
+### Comprehensive Audit Logging
+Gain full visibility into how your agents interact with LLMs.
+* **Payload Inspection**: View formatted request and response JSON for every generation to debug agent behavior.
+* **Session Tracking**: Group related requests into logical sessions to follow complex multi step conversations.
+* **Performance Benchmarking**: Track tokens per second and latency for every individual provider interaction.
+
+### Modern Architecture
+* **Frontend**: React and TypeScript with TailwindCSS for a responsive, prosumer grade UI.
+* **Backend**: High performance Axum server implemented in Rust for reliable request routing.
+* **Storage**: Local SQLite persistence for secure, offline first state management.
+
+## Getting Started
 
 ### Prerequisites
+* Rust 1.77+
+* Node.js 18+
+* Xcode CLI (for macOS users)
 
-*   Rust 1.77+ (rustup installed)
-*   Node.js 18+
-*   npm 9+
-*   Xcode CLI (macOS)
-
-### Install and Run (Development)
-
+### Installation
 ```bash
-# Install npm dependencies
+# Clone the repository and install dependencies
 npm install
 
-# Run in dev mode (hot-reload UI + Rust backend)
+# Run in development mode
 npx tauri dev
-```
 
-### Build for Production
-
-```bash
+# Build for production
 npx tauri build
 ```
 
-The distributable .dmg / .app will be in src-tauri/target/release/bundle/.
+## Integration Guide
+1. Launch Spora and initialize the local gateway.
+2. Add your provider keys in the Settings panel.
+3. Generate a Sk-Spora token in the Keys Wallet.
+4. Configure your application or IDE (such as Cursor or Claude Code):
+   * **Base URL**: `http://localhost:4141/v1`
+   * **API Key**: `sk-spora-your-token`
 
-# Architecture
+The gateway automatically handles protocol translation between various API formats and your selected provider backend.
 
-Spora is built with a clear separation of concerns:
-*   Frontend: React/TypeScript with Vite and TailwindCSS for a responsive prosumer experience.
-*   Backend: Rust (Axum) for high-performance request routing and provider translation.
-*   Storage: Local SQLite vault for secure, offline-first data management.
+## Security Architecture
+All cryptographic material and usage logs are stored in `~/.spora/spora.db`. Spora contains no telemetry and establishes no external network connections except those explicitly directed to your configured AI providers.
 
-# Using with Cursor and OpenAI-compatible clients
-
-1. Start the gateway by clicking Start Gateway in the app.
-2. Create a Spora Key in the Keys Wallet tab.
-3. In Cursor Settings -> AI -> Base URL: http://localhost:4141/v1
-4. API Key: your sk-spora-... token
-
-The proxy automatically translates requests to Anthropic or Gemini formats based on your configured provider keys.
-
-# Security
-
-*   All API keys stored locally in ~/.spora/spora.db (SQLite).
-*   Keys encrypted at rest.
-*   No telemetry and no external calls except to your configured AI providers.
-
-# License
-
-Public under MIT LICENSE. Created by Fisarum.
+## License
+Published under the MIT License. Created by Fisarum.
