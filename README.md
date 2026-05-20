@@ -27,7 +27,7 @@ Your prompts and secrets never leave your infrastructure. Spora employs a local 
 While Python based gateways often introduce significant latency overhead, Spora is engineered in Rust to handle high frequency requests from autonomous agents and real time IDE integrations. It is optimized for the sub second responsiveness required by modern agentic frameworks.
 
 ### Unified Developer Experience
-Integrate Spora once and access over 100 models from OpenAI, Anthropic, Gemini, and OpenRouter. It serves as a drop in replacement for any OpenAI SDK compatible tool. Simply point your base URL to the local proxy and manage all model routing through a single Sk-Spora token.
+Integrate Spora once and access over 100 models from OpenAI, Anthropic, Gemini, and OpenRouter. It serves as a drop in replacement for standard SDK compatible tools. Simply point your base URL to the local proxy and manage all model routing through a single Sk-Spora token.
 
 ## Technical Capabilities
 
@@ -76,7 +76,7 @@ npx tauri build
    * **Base URL**: `http://localhost:4141/v1`
    * **API Key**: `sk-spora-your-token`
 
-The gateway automatically handles protocol translation between OpenAI format and your selected provider backend.
+The gateway automatically handles protocol translation between various API formats and your selected provider backend.
 
 ## Security Architecture
 All cryptographic material and usage logs are stored in `~/.spora/spora.db`. Spora contains no telemetry and establishes no external network connections except those explicitly directed to your configured AI providers.
