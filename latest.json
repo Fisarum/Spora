@@ -1,10 +1,10 @@
 {
-  "version": "0.1.2",
-  "notes": "## 🚀 New Features\n\n### Background Daemon\n- **Headless Gateway Proxy**: Run Spora proxy in background at system startup without UI\n- **Cross-Platform Support**: macOS Launch Agent, Linux systemd, and Windows Task Scheduler\n- **Auto-Restart**: Daemon automatically restarts if it crashes\n- **Same Database**: Uses the same secure SQLite database as the UI app\n\n### OpenRouter Integration\n- **OpenRouter Provider Support**: Add OpenRouter API keys as a provider\n- **Model Routing**: Automatic provider inference for openrouter/ model prefixes\n- **Key Restrictions**: Restrict Spora keys to use only OpenRouter provider\n\n## 🔧 Technical Changes\n\n### Backend\n- Added `spora-daemon` binary for headless proxy operation\n- Added `default-run = \"spora\"` to Cargo.toml for proper dev mode\n- Made modules public (`db`, `proxy`, `state`, `error`) for daemon reuse\n- Added `openrouter` adapter for API forwarding\n- Updated provider inference to recognize openrouter/ model prefix\n\n### Frontend\n- Added `openrouter` to PROVIDER_META in KeysWallet\n- Added `openrouter` to ALL_PROVIDERS in CreateSporaKeyModal\n- Added OpenRouter option to AddProviderKeyModal\n\n### Documentation\n- Added DAEMON.md with setup instructions for macOS, Linux, and Windows\n- Added Makefile with cross-platform build and install targets",
-  "pub_date": "2026-05-20T23:00:00Z",
+  "version": "0.1.3",
+  "notes": "## Core Interface Overhaul\n\n### Activity Dashboard\n- Replaced basic analytics with a high-fidelity activity monitoring system.\n- Interactive metric cards for Spend, Requests, and Token usage.\n- Real-time hover synchronization: chart interaction dynamically updates card totals and breakdown lists.\n- Integrated 365-day activity heatmap for long-term usage pattern visualization.\n- Advanced timeframe selection with 17 predefined ranges.\n\n### Request Audit Logging\n- Dedicated Logs interface with Generations and Sessions tracking.\n- Detailed request/response inspection with formatted JSON payloads.\n- Live-streaming logs via Tauri event bus for real-time monitoring.\n- High-density data table with performance metrics and status tracking.\n- Filtering by Spora Key and Model.\n\n### UI/UX Refinements\n- Increased default window dimensions for better data density.\n- Smooth transition animations and improved visual feedback on chart interaction.\n- Sidebar navigation updated for intuitive access to Activity and Logs.",
+  "pub_date": "2026-05-21T00:00:00Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://github.com/Fisarum/Spora/releases/download/v0.1.2/Spora_0.1.2_aarch64.dmg"
+      "url": "https://github.com/Fisarum/Spora/releases/download/v0.1.3/Spora_0.1.3_aarch64.dmg"
     }
   }
 }
