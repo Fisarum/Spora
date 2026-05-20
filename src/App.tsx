@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import logo from "../src-tauri/assets/logo.png";
-import { Wallet, BarChart3, Settings, X, Download } from "lucide-react";
+import { Wallet, Activity, ScrollText, Settings, X, Download } from "lucide-react";
 import KeysWallet from "./components/KeysWallet/KeysWallet";
-import Analytics from "./components/Analytics/Analytics";
+import ActivityPage from "./components/Analytics/Analytics";
+import LogsPage from "./components/Logs/Logs";
 import SettingsTab from "./components/Settings/SettingsTab";
 import { settingsApi, updaterApi } from "./lib/tauri";
 import { listen } from "@tauri-apps/api/event";
 
-type Tab = "keys" | "analytics" | "settings";
+type Tab = "keys" | "activity" | "logs" | "settings";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("keys");
@@ -70,7 +71,8 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "keys", label: "Keys Wallet", icon: <Wallet size={16} /> },
-    { id: "analytics", label: "Analytics", icon: <BarChart3 size={16} /> },
+    { id: "activity", label: "Activity", icon: <Activity size={16} /> },
+    { id: "logs", label: "Logs", icon: <ScrollText size={16} /> },
     { id: "settings", label: "Settings", icon: <Settings size={16} /> },
   ];
 
@@ -142,7 +144,8 @@ export default function App() {
             }}
           />
         )}
-        {activeTab === "analytics" && <Analytics />}
+        {activeTab === "activity" && <ActivityPage />}
+        {activeTab === "logs" && <LogsPage />}
         {activeTab === "settings" && (
           <SettingsTab
             onGatewayStatusChange={(running) => {

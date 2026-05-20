@@ -77,6 +77,7 @@ export const analyticsApi = {
     offset: number;
     sporaKeyId: string | null;
     provider: string | null;
+    model: string | null;
   }): Promise<{ logs: RequestLog[]; total: number }> =>
     invoke("get_request_logs", { params }),
 };

@@ -6,12 +6,13 @@ use axum::Router;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::{CorsLayer, Any};
+use tauri::AppHandle;
 use crate::state::AppState;
 use crate::error::Result;
 
-pub async fn start_proxy(state: Arc<RwLock<AppState>>, port: u16) -> Result<()> {
+pub async fn start_proxy(state: Arc<RwLock<AppState>>, app_handle: Option<AppHandle>, port: u16) -> Result<()> {
     let app = Router::new()
-        .merge(router::create_router(state))
+        .merge(router::create_router(state, app_handle))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

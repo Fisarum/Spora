@@ -32,12 +32,13 @@ pub fn run() {
             app.manage(app_state.clone());
 
             let state_for_proxy = app_state.clone();
+            let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let port = {
                     let s = state_for_proxy.read().await;
                     s.settings.gateway_port
                 };
-                if let Err(e) = proxy::start_proxy(state_for_proxy, port).await {
+                if let Err(e) = proxy::start_proxy(state_for_proxy, Some(handle), port).await {
                     tracing::error!("Proxy server error: {}", e);
                 }
             });

@@ -10,6 +10,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::time::Instant;
 use uuid::Uuid;
+use tauri::{AppHandle, Emitter};
 
 use crate::state::AppState;
 use crate::proxy::middleware::{extract_spora_key, resolve_provider_key, resolve_provider_key_for_model, check_spend_cap};
@@ -18,10 +19,11 @@ use crate::proxy::adapters::{openai, anthropic, gemini, openrouter};
 #[derive(Clone)]
 pub struct ProxyState {
     pub app: Arc<RwLock<AppState>>,
+    pub app_handle: Option<AppHandle>,
 }
 
-pub fn create_router(state: Arc<RwLock<AppState>>) -> Router {
-    let proxy_state = ProxyState { app: state };
+pub fn create_router(state: Arc<RwLock<AppState>>, app_handle: Option<AppHandle>) -> Router {
+    let proxy_state = ProxyState { app: state, app_handle };
 
     Router::new()
         .route("/v1/chat/completions", post(chat_completions))
@@ -168,6 +170,12 @@ async fn chat_completions(
         let req_body_str = serde_json::to_string(&body).unwrap_or_default();
         let res_body_str = response_body.as_ref().map(|b| serde_json::to_string(b).unwrap_or_default());
 
+        let spora_key_label: Option<String> = db.query_row(
+            "SELECT label FROM spora_keys WHERE id = ?1",
+            rusqlite::params![if spora_key_id.is_empty() { None } else { Some(&spora_key_id) }],
+            |row| row.get(0),
+        ).ok().flatten();
+
         let _ = db.execute(
             "INSERT INTO request_logs (id, spora_key_id, provider, model, prompt_tokens, completion_tokens, cost_usd, latency_ms, status_code, ts, request_body, response_body)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
@@ -186,6 +194,24 @@ async fn chat_completions(
                 res_body_str,
             ],
         );
+
+        if let Some(ref handle) = state.app_handle {
+            let _ = handle.emit("new-request-log", serde_json::json!({
+            "id": log_id,
+            "sporaKeyId": if spora_key_id.is_empty() { serde_json::Value::Null } else { serde_json::json!(spora_key_id) },
+            "sporaKeyLabel": spora_key_label,
+            "provider": provider,
+            "model": model,
+            "promptTokens": prompt_tokens,
+            "completionTokens": completion_tokens,
+            "costUsd": cost,
+            "latencyMs": latency_ms,
+            "statusCode": status_code,
+            "ts": ts,
+            "requestBody": req_body_str,
+            "responseBody": res_body_str,
+        }));
+        }
     }
 
     match response_body {

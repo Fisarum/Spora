@@ -96,9 +96,9 @@ pub struct LogsParams {
     pub limit: i64,
     pub offset: i64,
     #[serde(rename = "sporaKeyId")]
-    pub _spora_key_id: Option<String>,
-    #[serde(rename = "provider")]
-    pub _provider: Option<String>,
+    pub spora_key_id: Option<String>,
+    pub provider: Option<String>,
+    pub model: Option<String>,
 }
 
 fn time_clause(from: Option<i64>, to: Option<i64>) -> String {
@@ -237,36 +237,71 @@ pub async fn get_request_logs(
     let s = state.read().await;
     let db = s.db.lock().unwrap();
 
+    let mut where_clauses: Vec<String> = Vec::new();
+    let mut count_params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut query_params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    if let Some(ref kid) = params.spora_key_id {
+        where_clauses.push("r.spora_key_id = ?".to_string());
+        count_params.push(Box::new(kid.clone()));
+        query_params.push(Box::new(kid.clone()));
+    }
+    if let Some(ref prov) = params.provider {
+        where_clauses.push("r.provider = ?".to_string());
+        count_params.push(Box::new(prov.clone()));
+        query_params.push(Box::new(prov.clone()));
+    }
+    if let Some(ref m) = params.model {
+        where_clauses.push("r.model = ?".to_string());
+        count_params.push(Box::new(m.clone()));
+        query_params.push(Box::new(m.clone()));
+    }
+
+    let where_str = if where_clauses.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", where_clauses.join(" AND "))
+    };
+
+    let count_sql = format!("SELECT COUNT(*) FROM request_logs r {}", where_str);
     let total: i64 = db.query_row(
-        "SELECT COUNT(*) FROM request_logs",
-        [],
+        &count_sql,
+        rusqlite::params_from_iter(count_params.iter().map(|p| p.as_ref())),
         |row| row.get(0),
     )?;
 
-    let mut stmt = db.prepare(
+    let query_sql = format!(
         "SELECT r.id, r.spora_key_id, k.label, r.provider, r.model,
                 r.prompt_tokens, r.completion_tokens, r.cost_usd, r.latency_ms, r.status_code, r.ts, r.request_body, r.response_body
          FROM request_logs r LEFT JOIN spora_keys k ON k.id = r.spora_key_id
-         ORDER BY r.ts DESC LIMIT ?1 OFFSET ?2"
-    )?;
+         {} ORDER BY r.ts DESC LIMIT ? OFFSET ?",
+        where_str
+    );
 
-    let logs = stmt.query_map(rusqlite::params![params.limit, params.offset], |row| {
-        Ok(RequestLog {
-            id: row.get(0)?,
-            spora_key_id: row.get(1)?,
-            spora_key_label: row.get(2)?,
-            provider: row.get(3)?,
-            model: row.get(4)?,
-            prompt_tokens: row.get(5)?,
-            completion_tokens: row.get(6)?,
-            cost_usd: row.get(7)?,
-            latency_ms: row.get(8)?,
-            status_code: row.get(9)?,
-            ts: row.get(10)?,
-            request_body: row.get(11)?,
-            response_body: row.get(12)?,
-        })
-    })?.collect::<rusqlite::Result<Vec<_>>>()?;
+    query_params.push(Box::new(params.limit));
+    query_params.push(Box::new(params.offset));
+
+    let mut stmt = db.prepare(&query_sql)?;
+    let logs = stmt.query_map(
+        rusqlite::params_from_iter(query_params.iter().map(|p| p.as_ref())),
+        |row| {
+            Ok(RequestLog {
+                id: row.get(0)?,
+                spora_key_id: row.get(1)?,
+                spora_key_label: row.get(2)?,
+                provider: row.get(3)?,
+                model: row.get(4)?,
+                prompt_tokens: row.get(5)?,
+                completion_tokens: row.get(6)?,
+                cost_usd: row.get(7)?,
+                latency_ms: row.get(8)?,
+                status_code: row.get(9)?,
+                ts: row.get(10)?,
+                request_body: row.get(11)?,
+                response_body: row.get(12)?,
+            })
+        },
+    )?.collect::<rusqlite::Result<Vec<_>>>()?;
 
     Ok(LogsResult { logs, total })
 }

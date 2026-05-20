@@ -41,7 +41,7 @@ async fn main() {
     tracing::info!("Starting Spora proxy on port {}", port);
 
     tokio::select! {
-        result = proxy::start_proxy(app_state, port) => {
+        result = proxy::start_proxy(app_state, None, port) => {
             if let Err(e) = result {
                 tracing::error!("Proxy server error: {}", e);
             }
