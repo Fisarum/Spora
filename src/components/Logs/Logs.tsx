@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { RefreshCw, SlidersHorizontal, ChevronDown, Check, Copy, MoreHorizontal } from "lucide-react";
+import { RefreshCw, SlidersHorizontal, ChevronDown, Check, Copy } from "lucide-react";
 import { analyticsApi, keysApi } from "../../lib/tauri";
 import { listen } from "@tauri-apps/api/event";
 import type { RequestLog, SporaKey } from "../../lib/types";
@@ -303,19 +303,13 @@ function LogDetailRow({ log }: { log: RequestLog }) {
 // ── Generations tab ──────────────────────────────────────────────
 function GenerationsTab({
   range,
-  sporaKeys,
   filterModel,
-  setFilterModel,
   filterKeyId,
-  setFilterKeyId,
   onModelsLoaded,
 }: {
   range: RangeKey;
-  sporaKeys: SporaKey[];
   filterModel: string | null;
-  setFilterModel: (m: string | null) => void;
   filterKeyId: string | null;
-  setFilterKeyId: (k: string | null) => void;
   onModelsLoaded: (models: string[]) => void;
 }) {
   const PAGE = 20;
@@ -369,7 +363,7 @@ function GenerationsTab({
       const models = [...new Set(result.logs.map(l => l.model))].sort();
       onModelsLoaded(models);
 
-      // suppress unused param warning
+      {/* suppress unused param warning */}
       void from; void to;
     } catch (e) {
       console.error(e);
@@ -377,8 +371,6 @@ function GenerationsTab({
       setLoading(false);
     }
   }
-
-  const distinctModels = [...new Set(logs.map(l => l.model))].sort();
 
   return (
     <div className="flex flex-col gap-0">
@@ -647,11 +639,8 @@ export default function Logs() {
         {activeTab === "generations" && (
           <GenerationsTab
             range={range}
-            sporaKeys={sporaKeys}
             filterModel={filterModel}
-            setFilterModel={setFilterModel}
             filterKeyId={filterKeyId}
-            setFilterKeyId={setFilterKeyId}
             onModelsLoaded={setDistinctModels}
           />
         )}
