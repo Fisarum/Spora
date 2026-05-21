@@ -1,0 +1,22 @@
+# Node / frontend — not needed in the Docker build
+node_modules/
+dist/
+.next/
+
+# Rust build artifacts — the Dockerfile uses its own build cache
+src-tauri/target/
+
+# Git and IDE
+.git/
+.gitignore
+*.swp
+*.swo
+
+# Docs and scripts not needed inside the image
+docs/
+*.md
+install.sh
+install-daemon.ps1
+com.spora.gateway.daemon.plist
+spora-daemon.service
+Makefile

@@ -10,7 +10,10 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::time::Instant;
 use uuid::Uuid;
+#[cfg(feature = "gui")]
 use tauri::{AppHandle, Emitter};
+#[cfg(not(feature = "gui"))]
+pub type AppHandle = ();
 
 use crate::state::AppState;
 use crate::proxy::middleware::{extract_spora_key, resolve_provider_key, resolve_provider_key_for_model, check_spend_cap};
@@ -208,6 +211,7 @@ async fn chat_completions(
             ],
         );
 
+        #[cfg(feature = "gui")]
         if let Some(ref handle) = state.app_handle {
             let _ = handle.emit("new-request-log", serde_json::json!({
             "id": log_id,

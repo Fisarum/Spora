@@ -1,0 +1,36 @@
+services:
+  spora-gateway:
+    image: ghcr.io/fisarum/spora-gateway:latest
+    # To build locally instead: uncomment the next two lines and comment out image:
+    # build:
+    #   context: .
+    container_name: spora-gateway
+    restart: unless-stopped
+
+    ports:
+      # Bind only to localhost on the host — keeps the proxy private to the machine.
+      # Change to "4141:4141" for a shared team/server deployment behind a firewall.
+      - "127.0.0.1:4141:4141"
+
+    volumes:
+      # Named volume persists the SQLite database across container restarts and upgrades.
+      # The path inside the container is controlled by SPORA_DB_PATH below.
+      - spora_data:/data
+
+    environment:
+      SPORA_LISTEN_ADDR: "0.0.0.0"
+      SPORA_DB_PATH: "/data/spora.db"
+      RUST_LOG: "info"
+      # Override the gateway port if needed (must also update the ports mapping above)
+      # SPORA_PORT: "4141"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4141/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  spora_data:
+    driver: local

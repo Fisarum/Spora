@@ -1,15 +1,18 @@
 pub mod db;
 pub mod proxy;
-mod commands;
 pub mod state;
 pub mod error;
 
-use tauri::Manager;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use crate::state::AppState;
+#[cfg(feature = "gui")]
+mod commands;
 
+#[cfg(feature = "gui")]
 pub fn run() {
+    use tauri::Manager;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+    use crate::state::AppState;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
