@@ -155,8 +155,21 @@ async fn chat_completions(
 
     let latency_ms = start.elapsed().as_millis() as i64;
 
+    // OpenRouter resolves model aliases like "openrouter/free" to an actual model
+    // (e.g. "nvidia/nemotron-3-nano-30b-a3b:free"). Extract it from the response for logging.
+    let logged_model: String = if provider == "openrouter" {
+        response_body.as_ref()
+            .and_then(|b| b.get("model"))
+            .and_then(|m| m.as_str())
+            .filter(|m| !m.is_empty())
+            .unwrap_or(&model)
+            .to_string()
+    } else {
+        model.clone()
+    };
+
     let (prompt_tokens, completion_tokens, cost) = if let Some(ref body) = response_body {
-        extract_usage(body, &model, &provider)
+        extract_usage(body, &logged_model, &provider)
     } else {
         (0, 0, 0.0)
     };
@@ -183,7 +196,7 @@ async fn chat_completions(
                 log_id,
                 if spora_key_id.is_empty() { None } else { Some(&spora_key_id) },
                 provider,
-                model,
+                logged_model,
                 prompt_tokens,
                 completion_tokens,
                 cost,
@@ -201,7 +214,7 @@ async fn chat_completions(
             "sporaKeyId": if spora_key_id.is_empty() { serde_json::Value::Null } else { serde_json::json!(spora_key_id) },
             "sporaKeyLabel": spora_key_label,
             "provider": provider,
-            "model": model,
+            "model": logged_model,
             "promptTokens": prompt_tokens,
             "completionTokens": completion_tokens,
             "costUsd": cost,
