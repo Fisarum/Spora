@@ -18,12 +18,27 @@ pub fn extract_spora_key(headers: &HeaderMap) -> Option<String> {
 
 pub fn infer_provider_from_model(model: &str) -> &'static str {
     let m = model.to_lowercase();
+
+    // Handle provider/model format (OpenRouter-style IDs)
+    if let Some(prefix) = m.split('/').next() {
+        match prefix {
+            "openai" | "~openai" => return "openai",
+            "anthropic" | "~anthropic" => return "anthropic",
+            "google" => return "gemini",
+            "openrouter" => return "openrouter",
+            // All other providers route through openrouter (has a slash separator)
+            p if !p.is_empty() && m.contains('/') => { let _ = p; return "openrouter"; },
+            _ => {}
+        }
+    }
+
+    // Legacy bare model names (no provider prefix)
     if m.starts_with("claude") {
         "anthropic"
-    } else if m.starts_with("gemini") {
+    } else if m.starts_with("gemini") || m.starts_with("gemma") {
         "gemini"
-    } else if m.starts_with("openrouter/") {
-        "openrouter"
+    } else if m.starts_with("gpt") || m.starts_with("o1") || m.starts_with("o3") || m.starts_with("o4") || m.starts_with("text-") || m.starts_with("davinci") {
+        "openai"
     } else {
         "openai"
     }

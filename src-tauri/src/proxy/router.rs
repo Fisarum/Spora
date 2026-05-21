@@ -10,7 +10,10 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::time::Instant;
 use uuid::Uuid;
+#[cfg(feature = "gui")]
 use tauri::{AppHandle, Emitter};
+#[cfg(not(feature = "gui"))]
+pub type AppHandle = ();
 
 use crate::state::AppState;
 use crate::proxy::middleware::{extract_spora_key, resolve_provider_key, resolve_provider_key_for_model, check_spend_cap};
@@ -28,6 +31,7 @@ pub fn create_router(state: Arc<RwLock<AppState>>, app_handle: Option<AppHandle>
     Router::new()
         .route("/v1/chat/completions", post(chat_completions))
         .route("/v1/models", get(list_models))
+        .route("/v1/models/available", get(list_models))
         .route("/health", get(health))
         .with_state(proxy_state)
 }
@@ -47,30 +51,89 @@ async fn list_models(
         }
     };
 
-    let resolved = {
+    let result = {
         let s = state.app.read().await;
         let db = s.db.lock().unwrap();
-        resolve_provider_key(&db, &spora_key)
+
+        // Validate key
+        let (spora_key_id, allowed_providers): (String, Option<String>) = match db.query_row(
+            "SELECT id, allowed_providers FROM spora_keys WHERE token = ?1 AND active = 1",
+            [&spora_key],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ) {
+            Ok(v) => v,
+            Err(_) => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Invalid Spora key"}))).into_response(),
+        };
+
+        let provider_filter: Option<Vec<String>> = allowed_providers
+            .and_then(|s| serde_json::from_str(&s).ok());
+
+        let has_openrouter = provider_filter.as_ref()
+            .map(|pf| pf.iter().any(|p| p == "openrouter"))
+            .unwrap_or(true);
+
+        // Query models from DB filtered by provider access
+        let models: Vec<serde_json::Value> = if has_openrouter {
+            let mut stmt = match db.prepare(
+                "SELECT id, name, provider, spora_provider FROM models ORDER BY provider, name"
+            ) {
+                Ok(s) => s,
+                Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "DB error"}))).into_response(),
+            };
+            stmt.query_map([], |row| {
+                Ok(json!({
+                    "id": row.get::<_, String>(0)?,
+                    "object": "model",
+                    "provider": row.get::<_, String>(2)?,
+                    "spora_provider": row.get::<_, String>(3)?
+                }))
+            }).ok()
+            .map(|iter| iter.flatten().collect())
+            .unwrap_or_default()
+        } else if let Some(ref pf) = provider_filter {
+            let spora_providers: Vec<String> = pf.iter().map(|p| match p.as_str() {
+                "openai" => "openai".to_string(),
+                "anthropic" => "anthropic".to_string(),
+                "gemini" => "gemini".to_string(),
+                _ => "openrouter".to_string(),
+            }).collect();
+            let placeholders = spora_providers.iter()
+                .enumerate()
+                .map(|(i, _)| format!("?{}", i + 1))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let sql = format!(
+                "SELECT id, name, provider, spora_provider FROM models WHERE spora_provider IN ({}) ORDER BY provider, name",
+                placeholders
+            );
+            let mut stmt = match db.prepare(&sql) {
+                Ok(s) => s,
+                Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "DB error"}))).into_response(),
+            };
+            let params: Vec<Box<dyn rusqlite::ToSql>> = spora_providers
+                .iter()
+                .map(|s| Box::new(s.clone()) as Box<dyn rusqlite::ToSql>)
+                .collect();
+            let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+            stmt.query_map(param_refs.as_slice(), |row| {
+                Ok(json!({
+                    "id": row.get::<_, String>(0)?,
+                    "object": "model",
+                    "provider": row.get::<_, String>(2)?,
+                    "spora_provider": row.get::<_, String>(3)?
+                }))
+            }).ok()
+            .map(|iter| iter.flatten().collect())
+            .unwrap_or_default()
+        } else {
+            vec![]
+        };
+
+        let _ = spora_key_id;
+        models
     };
 
-    match resolved {
-        Err(e) => {
-            (StatusCode::UNAUTHORIZED, Json(json!({"error": e.to_string()}))).into_response()
-        }
-        Ok(_) => Json(json!({
-            "object": "list",
-            "data": [
-                {"id": "gpt-4o", "object": "model", "provider": "openai"},
-                {"id": "gpt-4o-mini", "object": "model", "provider": "openai"},
-                {"id": "gpt-3.5-turbo", "object": "model", "provider": "openai"},
-                {"id": "claude-3-5-sonnet-20241022", "object": "model", "provider": "anthropic"},
-                {"id": "claude-3-haiku-20240307", "object": "model", "provider": "anthropic"},
-                {"id": "gemini-1.5-pro", "object": "model", "provider": "gemini"},
-                {"id": "gemini-1.5-flash", "object": "model", "provider": "gemini"},
-                {"id": "openrouter/auto", "object": "model", "provider": "openrouter"},
-            ]
-        })).into_response()
-    }
+    Json(json!({"object": "list", "data": result})).into_response()
 }
 
 async fn chat_completions(
@@ -155,8 +218,21 @@ async fn chat_completions(
 
     let latency_ms = start.elapsed().as_millis() as i64;
 
+    // OpenRouter resolves model aliases like "openrouter/free" to an actual model
+    // (e.g. "nvidia/nemotron-3-nano-30b-a3b:free"). Extract it from the response for logging.
+    let logged_model: String = if provider == "openrouter" {
+        response_body.as_ref()
+            .and_then(|b| b.get("model"))
+            .and_then(|m| m.as_str())
+            .filter(|m| !m.is_empty())
+            .unwrap_or(&model)
+            .to_string()
+    } else {
+        model.clone()
+    };
+
     let (prompt_tokens, completion_tokens, cost) = if let Some(ref body) = response_body {
-        extract_usage(body, &model, &provider)
+        extract_usage(body, &logged_model, &provider)
     } else {
         (0, 0, 0.0)
     };
@@ -183,7 +259,7 @@ async fn chat_completions(
                 log_id,
                 if spora_key_id.is_empty() { None } else { Some(&spora_key_id) },
                 provider,
-                model,
+                logged_model,
                 prompt_tokens,
                 completion_tokens,
                 cost,
@@ -195,13 +271,14 @@ async fn chat_completions(
             ],
         );
 
+        #[cfg(feature = "gui")]
         if let Some(ref handle) = state.app_handle {
             let _ = handle.emit("new-request-log", serde_json::json!({
             "id": log_id,
             "sporaKeyId": if spora_key_id.is_empty() { serde_json::Value::Null } else { serde_json::json!(spora_key_id) },
             "sporaKeyLabel": spora_key_label,
             "provider": provider,
-            "model": model,
+            "model": logged_model,
             "promptTokens": prompt_tokens,
             "completionTokens": completion_tokens,
             "costUsd": cost,

@@ -17,15 +17,17 @@ name = "spora-daemon"
 path = "src/bin/daemon.rs"
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api"] }
-tauri-plugin-shell = "2"
-tauri-plugin-process = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-fs = "2"
-tauri-plugin-dialog = "2"
-tauri-plugin-os = "2"
-tauri-plugin-clipboard-manager = "2"
-tauri-plugin-global-shortcut = "2"
+# GUI-only dependencies (Tauri desktop app)
+tauri = { version = "2", features = ["macos-private-api"], optional = true }
+tauri-plugin-shell = { version = "2", optional = true }
+tauri-plugin-process = { version = "2", optional = true }
+tauri-plugin-updater = { version = "2", optional = true }
+tauri-plugin-fs = { version = "2", optional = true }
+tauri-plugin-dialog = { version = "2", optional = true }
+tauri-plugin-os = { version = "2", optional = true }
+tauri-plugin-clipboard-manager = { version = "2", optional = true }
+tauri-plugin-global-shortcut = { version = "2", optional = true }
+# Core dependencies (always present — daemon + GUI)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
@@ -49,8 +51,24 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dirs = "5"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2", features = [], optional = true }
 
 [features]
-default = ["custom-protocol"]
+# Default: full GUI desktop application
+default = ["gui", "custom-protocol"]
+# gui: enables all Tauri dependencies for the desktop app
+gui = [
+    "dep:tauri",
+    "dep:tauri-plugin-shell",
+    "dep:tauri-plugin-process",
+    "dep:tauri-plugin-updater",
+    "dep:tauri-plugin-fs",
+    "dep:tauri-plugin-dialog",
+    "dep:tauri-plugin-os",
+    "dep:tauri-plugin-clipboard-manager",
+    "dep:tauri-plugin-global-shortcut",
+    "dep:tauri-build",
+]
+# daemon: headless proxy only — no Tauri, no GUI, suitable for Docker/server
+daemon = []
 custom-protocol = ["tauri/custom-protocol"]

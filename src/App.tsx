@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import logo from "../src-tauri/assets/logo.png";
-import { Wallet, Activity, Terminal, Settings, X, Download } from "lucide-react";
+import { Wallet, Activity, Terminal, Settings, X, Download, BookOpen } from "lucide-react";
 import KeysWallet from "./components/KeysWallet/KeysWallet";
 import ActivityPage from "./components/Analytics/Analytics";
 import LogsPage from "./components/Logs/Logs";
 import SettingsTab from "./components/Settings/SettingsTab";
+import IntegrationsTab from "./components/Integrations/IntegrationsTab";
 import { settingsApi, updaterApi } from "./lib/tauri";
 import { listen } from "@tauri-apps/api/event";
 
-type Tab = "keys" | "activity" | "logs" | "settings";
+type Tab = "keys" | "activity" | "logs" | "settings" | "integrations";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("keys");
@@ -74,6 +75,7 @@ export default function App() {
     { id: "activity", label: "Activity", icon: <Activity size={16} /> },
     { id: "logs", label: "Logs", icon: <Terminal size={16} /> },
     { id: "settings", label: "Settings", icon: <Settings size={16} /> },
+    { id: "integrations", label: "Integrations", icon: <BookOpen size={16} /> },
   ];
 
   return (
@@ -153,6 +155,7 @@ export default function App() {
             }}
           />
         )}
+        {activeTab === "integrations" && <IntegrationsTab />}
       </div>
     </div>
   );

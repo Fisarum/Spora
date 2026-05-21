@@ -40,7 +40,22 @@ CREATE TABLE IF NOT EXISTS settings (
     value   TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS models (
+    id                  TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    provider            TEXT NOT NULL,
+    spora_provider      TEXT NOT NULL,
+    context_length      INTEGER NOT NULL DEFAULT 0,
+    modality            TEXT NOT NULL DEFAULT '',
+    description         TEXT NOT NULL DEFAULT '',
+    prompt_price        REAL NOT NULL DEFAULT 0.0,
+    completion_price    REAL NOT NULL DEFAULT 0.0,
+    tags                TEXT NOT NULL DEFAULT '[]',
+    updated_at          INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE INDEX IF NOT EXISTS idx_logs_ts ON request_logs(ts);
 CREATE INDEX IF NOT EXISTS idx_logs_spora_key ON request_logs(spora_key_id);
 CREATE INDEX IF NOT EXISTS idx_logs_provider ON request_logs(provider);
+CREATE INDEX IF NOT EXISTS idx_models_spora_provider ON models(spora_provider);
 "#;

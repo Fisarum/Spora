@@ -5,6 +5,9 @@ use spora_lib::proxy;
 use spora_lib::state::AppState;
 
 fn db_path() -> std::path::PathBuf {
+    if let Ok(path) = std::env::var("SPORA_DB_PATH") {
+        return std::path::PathBuf::from(path);
+    }
     let data_dir = dirs::data_dir()
         .expect("Failed to find user data directory");
     data_dir.join("com.spora.gateway").join("spora.db")
