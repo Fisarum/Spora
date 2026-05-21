@@ -125,6 +125,96 @@ function TimeframePicker({ value, onChange }: { value: RangeKey; onChange: (k: R
   );
 }
 
+// ── FilterPicker ──────────────────────────────────────────────────
+function FilterPicker({
+  filterModel,
+  setFilterModel,
+  filterKeyId,
+  setFilterKeyId,
+  distinctModels,
+  sporaKeys,
+}: {
+  filterModel: string | null;
+  setFilterModel: (m: string | null) => void;
+  filterKeyId: string | null;
+  setFilterKeyId: (k: string | null) => void;
+  distinctModels: string[];
+  sporaKeys: SporaKey[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const hasFilters = filterModel || filterKeyId;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-8 h-8 flex items-center justify-center rounded-md border transition-all ${
+          open || hasFilters
+            ? "border-primary/30 bg-primary/10 text-primary"
+            : "border-white/10 bg-white/5 text-foreground/40 hover:text-foreground/70 hover:bg-white/10"
+        }`}
+      >
+        <SlidersHorizontal size={14} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-10 z-50 w-64 rounded-lg border border-white/10 bg-[#0f0f0f] shadow-2xl p-4 space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-foreground/30 font-medium">Model</label>
+            <select
+              value={filterModel ?? ""}
+              onChange={(e) => setFilterModel(e.target.value || null)}
+              className="w-full h-9 bg-white/5 border border-white/10 rounded px-3 text-[12px] text-foreground/70 focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer"
+            >
+              <option value="">All Models</option>
+              {distinctModels.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-foreground/30 font-medium">Spora Key</label>
+            <select
+              value={filterKeyId ?? ""}
+              onChange={(e) => setFilterKeyId(e.target.value || null)}
+              className="w-full h-9 bg-white/5 border border-white/10 rounded px-3 text-[12px] text-foreground/70 focus:outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer"
+            >
+              <option value="">All Keys</option>
+              {sporaKeys.map((k) => (
+                <option key={k.id} value={k.id}>{k.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {(filterModel || filterKeyId) && (
+            <button
+              onClick={() => {
+                setFilterModel(null);
+                setFilterKeyId(null);
+                setOpen(false);
+              }}
+              className="w-full py-2 text-[10px] uppercase tracking-wider text-primary/60 hover:text-primary transition-colors border-t border-white/5 pt-3 mt-2"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Sessions empty state code snippets ───────────────────────────
 type SnippetTab = "spora" | "openai-python" | "typescript" | "curl";
 
@@ -212,16 +302,28 @@ function LogDetailRow({ log }: { log: RequestLog }) {
 
 // ── Generations tab ──────────────────────────────────────────────
 function GenerationsTab({
-  range, sporaKeys,
-}: { range: RangeKey; sporaKeys: SporaKey[] }) {
+  range,
+  sporaKeys,
+  filterModel,
+  setFilterModel,
+  filterKeyId,
+  setFilterKeyId,
+  onModelsLoaded,
+}: {
+  range: RangeKey;
+  sporaKeys: SporaKey[];
+  filterModel: string | null;
+  setFilterModel: (m: string | null) => void;
+  filterKeyId: string | null;
+  setFilterKeyId: (k: string | null) => void;
+  onModelsLoaded: (models: string[]) => void;
+}) {
   const PAGE = 20;
   const [logs, setLogs] = useState<RequestLog[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filterModel, setFilterModel] = useState<string | null>(null);
-  const [filterKeyId, setFilterKeyId] = useState<string | null>(null);
   const [chartData, setChartData] = useState<{ time: string; count: number }[]>([]);
 
   const filtersRef = useRef({ filterModel, filterKeyId });
@@ -263,6 +365,10 @@ function GenerationsTab({
       });
       setChartData(Array.from(buckets.entries()).map(([time, count]) => ({ time, count })));
 
+      // Extract distinct models from the current view to populate the filter
+      const models = [...new Set(result.logs.map(l => l.model))].sort();
+      onModelsLoaded(models);
+
       // suppress unused param warning
       void from; void to;
     } catch (e) {
@@ -277,7 +383,7 @@ function GenerationsTab({
   return (
     <div className="flex flex-col gap-0">
       {/* Mini chart */}
-      {chartData.length > 0 && (
+      {logs.length > 0 && chartData.length > 0 && (
         <div className="h-24 px-6 pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
@@ -293,25 +399,11 @@ function GenerationsTab({
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-white/5">
-        <select
-          value={filterModel ?? ""}
-          onChange={e => setFilterModel(e.target.value || null)}
-          className="h-7 bg-white/5 border border-white/10 rounded px-2 text-[11px] text-foreground/60 focus:outline-none focus:border-primary/30"
-        >
-          <option value="">All Models</option>
-          {distinctModels.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <select
-          value={filterKeyId ?? ""}
-          onChange={e => setFilterKeyId(e.target.value || null)}
-          className="h-7 bg-white/5 border border-white/10 rounded px-2 text-[11px] text-foreground/60 focus:outline-none focus:border-primary/30"
-        >
-          <option value="">All Keys</option>
-          {sporaKeys.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
-        </select>
-        <span className="text-[11px] text-foreground/30 ml-auto">{total.toLocaleString()} generations</span>
+      {/* Summary */}
+      <div className="flex items-center justify-end px-6 py-2 border-b border-white/5 bg-white/[0.01]">
+        <span className="text-[10px] uppercase tracking-widest text-foreground/20 font-medium">
+          {total.toLocaleString()} generations
+        </span>
       </div>
 
       {/* Table */}
@@ -493,6 +585,9 @@ export default function Logs() {
   const [activeTab, setActiveTab] = useState<LogTab>("generations");
   const [range, setRange] = useState<RangeKey>("1d");
   const [sporaKeys, setSporaKeys] = useState<SporaKey[]>([]);
+  const [filterModel, setFilterModel] = useState<string | null>(null);
+  const [filterKeyId, setFilterKeyId] = useState<string | null>(null);
+  const [distinctModels, setDistinctModels] = useState<string[]>([]);
 
   useEffect(() => {
     keysApi.listSporaKeys().then(setSporaKeys).catch(() => {});
@@ -519,13 +614,15 @@ export default function Logs() {
             >
               <RefreshCw size={14} />
             </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-md border border-white/10 bg-white/5 text-foreground/40 hover:text-foreground/70 hover:bg-white/10 transition-all">
-              <SlidersHorizontal size={14} />
-            </button>
+            <FilterPicker
+              filterModel={filterModel}
+              setFilterModel={setFilterModel}
+              filterKeyId={filterKeyId}
+              setFilterKeyId={setFilterKeyId}
+              distinctModels={distinctModels}
+              sporaKeys={sporaKeys}
+            />
             <TimeframePicker value={range} onChange={setRange} />
-            <button className="w-8 h-8 flex items-center justify-center rounded-md border border-white/10 bg-white/5 text-foreground/40 hover:text-foreground/70 hover:bg-white/10 transition-all">
-              <MoreHorizontal size={14} />
-            </button>
           </div>
         </div>
 
@@ -548,7 +645,15 @@ export default function Logs() {
 
         {/* Tab content */}
         {activeTab === "generations" && (
-          <GenerationsTab range={range} sporaKeys={sporaKeys} />
+          <GenerationsTab
+            range={range}
+            sporaKeys={sporaKeys}
+            filterModel={filterModel}
+            setFilterModel={setFilterModel}
+            filterKeyId={filterKeyId}
+            setFilterKeyId={setFilterKeyId}
+            onModelsLoaded={setDistinctModels}
+          />
         )}
         {activeTab === "sessions" && <SessionsTab />}
       </div>
