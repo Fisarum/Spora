@@ -1,9 +1,9 @@
 services:
   spora-gateway:
-    image: ghcr.io/fisarum/spora-gateway:latest
-    # To build locally instead: uncomment the next two lines and comment out image:
-    # build:
-    #   context: .
+    # image: ghcr.io/fisarum/spora-gateway:latest
+    # To build locally instead:
+    build:
+      context: .
     container_name: spora-gateway
     restart: unless-stopped
 
