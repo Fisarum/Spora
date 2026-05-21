@@ -186,31 +186,55 @@ export default function IntegrationsTab() {
           </p>
         </ToolCard>
 
-        {/* VS Code / Copilot / Continue */}
+        {/* GitHub Copilot */}
         <ToolCard
           icon={<Terminal size={15} />}
-          title="VS Code — Continue / Copilot Chat"
-          subtitle="Continue.dev extension · OpenAI-compatible"
+          title="GitHub Copilot"
+          subtitle="VS Code · OpenAI-compatible endpoint override"
         >
           <p className="text-[10px] text-foreground/50">
-            Add to your <code className="text-primary">~/.continue/config.json</code>:
+            In VS Code, open <code className="text-primary">Settings (JSON)</code> and add:
           </p>
           <CodeBlock
             code={`{
-  "models": [
-    {
-      "title": "Spora Gateway",
-      "provider": "openai",
-      "model": "openai/gpt-4.1",
-      "apiBase": "${baseUrl}",
-      "apiKey": "${token}"
-    }
-  ]
+  "github.copilot.advanced": {
+    "debug.overrideEngine": "openai/gpt-4.1",
+    "debug.overrideChatEngine": "openai/gpt-4.1",
+    "debug.overrideProxyUrl": "${baseUrl}",
+    "authProvider": "none"
+  }
 }`}
           />
+          <p className="text-[10px] text-foreground/50 mt-1">
+            Set the <code className="text-primary">OPENAI_API_KEY</code> environment variable before launching VS Code:
+          </p>
+          <CodeBlock
+            code={`export OPENAI_API_KEY="${token}"
+code .`}
+          />
+          <p className="text-[10px] text-foreground/50 mt-1">
+            Replace the model ID with any model from the Model Discovery panel.
+          </p>
+        </ToolCard>
+
+        {/* Cline */}
+        <ToolCard
+          icon={<Code2 size={15} />}
+          title="Cline"
+          subtitle="VS Code extension · OpenAI-compatible"
+        >
           <p className="text-[10px] text-foreground/50">
-            For GitHub Copilot Chat, use the OpenAI-compatible endpoint setting in VS Code settings under{" "}
-            <code className="text-primary">github.copilot.advanced</code>.
+            In VS Code, open the Cline extension settings and select <code className="text-primary">OpenAI Compatible</code> as the API provider, then fill in:
+          </p>
+          <SnippetBlock label="Base URL" value={baseUrl} />
+          <SnippetBlock label="API Key" value={token} />
+          <p className="text-[10px] text-foreground/50 mt-1">
+            In the <code className="text-primary">Model ID</code> field, enter any model ID (e.g.{" "}
+            <code className="text-primary text-[10px]">anthropic/claude-sonnet-4</code> or{" "}
+            <code className="text-primary text-[10px]">openai/gpt-4.1</code>).
+          </p>
+          <p className="text-[10px] text-foreground/50 mt-1">
+            Spora handles all provider translation — Cline only needs the OpenAI-compatible interface.
           </p>
         </ToolCard>
 
