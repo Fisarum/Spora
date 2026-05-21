@@ -2,7 +2,7 @@
 
 Spora can be installed as a full desktop application (with a GUI) or as a headless background daemon (for servers/CLI tools).
 
-## 🚀 Quick Start (Daemon Only)
+## Quick Start (Daemon Only)
 
 If you only need the background engine for tools like Cursor or Claude Code:
 
@@ -19,7 +19,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManage
 
 ---
 
-## 🛠️ Full Desktop App Build (GUI)
+## Full Desktop App Build (GUI)
 
 To build the interactive dashboard and the gateway, follow these steps.
 
