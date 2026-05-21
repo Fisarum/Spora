@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import logo from "../src-tauri/assets/logo.png";
-import { Wallet, Activity, ScrollText, Settings, X, Download } from "lucide-react";
+import { Wallet, Activity, Terminal, Settings, X, Download } from "lucide-react";
 import KeysWallet from "./components/KeysWallet/KeysWallet";
 import ActivityPage from "./components/Analytics/Analytics";
 import LogsPage from "./components/Logs/Logs";
@@ -72,7 +72,7 @@ export default function App() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "keys", label: "Keys Wallet", icon: <Wallet size={16} /> },
     { id: "activity", label: "Activity", icon: <Activity size={16} /> },
-    { id: "logs", label: "Logs", icon: <ScrollText size={16} /> },
+    { id: "logs", label: "Logs", icon: <Terminal size={16} /> },
     { id: "settings", label: "Settings", icon: <Settings size={16} /> },
   ];
 
