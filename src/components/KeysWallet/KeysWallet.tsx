@@ -14,6 +14,7 @@ import { keysApi, settingsApi } from "../../lib/tauri";
 import type { ProviderKey, SporaKey, Provider } from "../../lib/types";
 import AddProviderKeyModal from "./AddProviderKeyModal";
 import CreateSporaKeyModal from "./CreateSporaKeyModal";
+import { ModelSelectorToggle } from "./ModelSelector";
 
 const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string }> = {
   openai: { name: "OpenAI", color: "text-primary", bg: "bg-primary/10" },
@@ -312,6 +313,10 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
                         </div>
                       )}
                     </div>
+
+                    {key.active && (
+                      <ModelSelectorToggle sporaKeyId={key.id} />
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">

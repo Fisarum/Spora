@@ -10,6 +10,7 @@ import type {
   DailyUsage,
   GatewaySettings,
   Provider,
+  Model,
 } from "./types";
 
 export const keysApi = {
@@ -102,6 +103,17 @@ export const settingsApi = {
   startGateway: (): Promise<void> => invoke("start_gateway"),
 
   stopGateway: (): Promise<void> => invoke("stop_gateway"),
+};
+
+export const modelsApi = {
+  listAvailableModels: (sporaKeyId: string): Promise<Model[]> =>
+    invoke("list_available_models", { sporaKeyId }),
+
+  syncModels: (): Promise<number> => invoke("sync_models"),
+
+  getModelCount: (): Promise<number> => invoke("get_model_count"),
+
+  resetModels: (): Promise<void> => invoke("reset_models"),
 };
 
 export const updaterApi = {

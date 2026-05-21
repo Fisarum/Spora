@@ -74,6 +74,10 @@ pub fn run() {
             commands::updater::download_update,
             commands::updater::install_and_restart,
             commands::updater::get_current_version,
+            commands::models::list_available_models,
+            commands::models::sync_models,
+            commands::models::get_model_count,
+            commands::models::reset_models,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

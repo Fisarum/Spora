@@ -75,6 +75,21 @@ export interface DailyUsage {
   tokens: number;
 }
 
+export type ModelTag = "Coding" | "Reasoning" | "Fast" | "Free" | "Vision";
+
+export interface Model {
+  id: string;
+  name: string;
+  provider: string;
+  sporaProvider: string;
+  contextLength: number;
+  modality: string;
+  description: string;
+  promptPrice: number;
+  completionPrice: number;
+  tags: ModelTag[];
+}
+
 export interface GatewaySettings {
   retryCount: number;
   timeoutSeconds: number;
