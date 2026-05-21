@@ -58,8 +58,21 @@ BINARY_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BIN_NAME}-
 TMP="$(mktemp)"
 
 yellow "Downloading ${BINARY_URL}..."
-curl -fsSL --progress-bar "$BINARY_URL" -o "$TMP" \
-    || die "Download failed. Check that ${VERSION} exists at https://github.com/${REPO}/releases"
+if ! curl -fsSL --progress-bar "$BINARY_URL" -o "$TMP"; then
+    red "Download failed (404). The pre-built binary for ${PLATFORM}/${ARCH_SLUG} might not be available for ${VERSION}."
+    if command -v cargo >/dev/null 2>&1; then
+        yellow "Rust/Cargo detected. Attempting to build from source instead..."
+        if [ -d "src-tauri" ]; then
+            cd src-tauri && cargo build --release --no-default-features --features daemon --bin spora-daemon
+            mv target/release/spora-daemon "$TMP"
+            cd ..
+        else
+            die "Source directory 'src-tauri' not found. Please clone the repo and run 'make build-daemon'."
+        fi
+    else
+        die "Download failed and 'cargo' not found. Please check https://github.com/${REPO}/releases or install Rust."
+    fi
+fi
 
 mkdir -p "$INSTALL_DIR"
 mv "$TMP" "${INSTALL_DIR}/${BIN_NAME}"

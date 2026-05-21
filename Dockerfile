@@ -1,7 +1,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: Build — compile spora-daemon without any Tauri / GUI dependencies
 # ──────────────────────────────────────────────────────────────────────────────
-FROM rust:1.77-slim AS builder
+FROM rust:1.86-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
