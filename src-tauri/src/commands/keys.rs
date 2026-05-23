@@ -53,6 +53,30 @@ pub struct CreateSporaKeyParams {
     pub monthly_limit_usd: Option<f64>,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateProviderKeyParams {
+    pub id: String,
+    pub provider: String,
+    pub label: String,
+    #[serde(rename = "apiKey")]
+    pub api_key: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateSporaKeyParams {
+    pub id: String,
+    pub label: String,
+    pub location: String,
+    #[serde(rename = "allowedProviders")]
+    pub allowed_providers: Option<Vec<String>>,
+    #[serde(rename = "allowedModels")]
+    pub allowed_models: Option<Vec<String>>,
+    #[serde(rename = "dailyLimitUsd")]
+    pub daily_limit_usd: Option<f64>,
+    #[serde(rename = "monthlyLimitUsd")]
+    pub monthly_limit_usd: Option<f64>,
+}
+
 #[tauri::command]
 pub async fn list_provider_keys(
     state: State<'_, AppStateManaged>,
@@ -111,6 +135,33 @@ pub async fn add_provider_key(
         masked_key: masked,
         created_at: ts,
     })
+}
+
+#[tauri::command]
+pub async fn update_provider_key(
+    state: State<'_, AppStateManaged>,
+    params: UpdateProviderKeyParams,
+) -> Result<(), SporaError> {
+    let s = state.read().await;
+    let db = s.db.lock().unwrap();
+
+    if let Some(api_key) = params.api_key {
+        if !api_key.trim().is_empty() {
+            let key_enc = encrypt_key(&api_key);
+            db.execute(
+                "UPDATE provider_keys SET provider = ?1, label = ?2, key_enc = ?3 WHERE id = ?4",
+                rusqlite::params![params.provider, params.label, key_enc, params.id],
+            )?;
+            return Ok(());
+        }
+    }
+
+    db.execute(
+        "UPDATE provider_keys SET provider = ?1, label = ?2 WHERE id = ?3",
+        rusqlite::params![params.provider, params.label, params.id],
+    )?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -191,6 +242,31 @@ pub async fn create_spora_key(
         created_at: ts,
         active: true,
     })
+}
+
+#[tauri::command]
+pub async fn update_spora_key(
+    state: State<'_, AppStateManaged>,
+    params: UpdateSporaKeyParams,
+) -> Result<(), SporaError> {
+    let allowed_providers_json: Option<String> = params.allowed_providers.as_ref()
+        .map(|v| serde_json::to_string(v).unwrap_or_default());
+    let allowed_models_json: Option<String> = params.allowed_models.as_ref()
+        .map(|v| serde_json::to_string(v).unwrap_or_default());
+
+    let s = state.read().await;
+    let db = s.db.lock().unwrap();
+    db.execute(
+        "UPDATE spora_keys SET label = ?1, location = ?2, allowed_providers = ?3, allowed_models = ?4, daily_limit_usd = ?5, monthly_limit_usd = ?6 WHERE id = ?7",
+        rusqlite::params![
+            params.label, params.location,
+            allowed_providers_json, allowed_models_json,
+            params.daily_limit_usd, params.monthly_limit_usd,
+            params.id
+        ],
+    )?;
+
+    Ok(())
 }
 
 #[tauri::command]

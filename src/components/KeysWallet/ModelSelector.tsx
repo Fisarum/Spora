@@ -131,12 +131,12 @@ export default function ModelSelector({ sporaKeyId }: Props) {
 
       {/* Search */}
       <div className="relative">
-        <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/30" />
+        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search models…"
-          className="w-full pl-7 pr-3 py-2 rounded bg-white/3 border border-primary/5 text-[11px] text-foreground placeholder-foreground/20 focus:outline-none focus:border-primary/30 transition-all font-mono"
+          className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-white/10 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:border-primary/50 transition-all font-medium shadow-inner"
         />
       </div>
 
@@ -181,48 +181,55 @@ export default function ModelSelector({ sporaKeyId }: Props) {
           {filtered.map((model) => (
             <div
               key={model.id}
-              className="group flex items-start gap-3 p-3 rounded border border-primary/5 bg-white/1 hover:bg-primary/5 hover:border-primary/20 transition-all"
+              className="group flex items-start gap-4 p-4 rounded-xl border border-white/5 bg-black/20 hover:bg-primary/[0.03] hover:border-primary/30 transition-all"
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-medium text-foreground truncate">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-[13px] font-bold text-foreground tracking-tight">
                     {model.name.replace(/^(OpenAI|Anthropic|Google|Meta|DeepSeek|Mistral|Qwen|xAI|NVIDIA|Perplexity|MiniMax|Mistral): /, "")}
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/10 uppercase font-medium flex-shrink-0">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-foreground/50 border border-white/10 uppercase font-bold tracking-wider">
                     {model.provider}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[9px] font-mono text-foreground/35 truncate">{model.id}</span>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-[10px] font-mono text-foreground/30 truncate bg-black/20 px-1.5 py-0.5 rounded">{model.id}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                  <span className="text-[9px] text-foreground/40">
-                    {formatContext(model.contextLength)} ctx
-                  </span>
+                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-primary/40" />
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-foreground/40">
+                      {formatContext(model.contextLength)} context
+                    </span>
+                  </div>
                   {model.promptPrice >= 0 && (
-                    <span className="text-[9px] text-foreground/40">
-                      {formatPrice(model.promptPrice)} in
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-primary/40" />
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-foreground/40">
+                        {formatPrice(model.promptPrice)} / 1M
+                      </span>
+                    </div>
                   )}
-                  {model.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className={`text-[8px] px-1.5 py-0.5 rounded border ${TAG_STYLE[tag]}`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  <div className="flex gap-1.5 ml-auto">
+                    {model.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className={`text-[9px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${TAG_STYLE[tag]}`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
               <button
                 onClick={() => copyModelId(model.id)}
-                className="p-1.5 text-foreground/20 hover:text-foreground/70 hover:bg-foreground/10 rounded transition-all opacity-0 group-hover:opacity-100 flex-shrink-0 relative"
-                title="Copy model ID"
+                className="p-2.5 text-foreground/20 hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
               >
                 {copiedId === model.id ? (
-                  <Check size={13} className="text-green-400" />
+                  <Check size={16} className="text-primary" />
                 ) : (
-                  <Copy size={13} />
+                  <Copy size={16} />
                 )}
               </button>
             </div>
@@ -244,11 +251,11 @@ export function ModelSelectorToggle({
     <div>
       <button
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded text-[9px] uppercase tracking-wider text-foreground/40 hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs uppercase tracking-[0.15em] font-bold text-foreground/50 hover:text-primary hover:bg-primary/10 border border-white/5 hover:border-primary/30 transition-all"
       >
-        <Zap size={10} />
-        Models
-        {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+        <Zap size={14} className={open ? "text-primary" : ""} />
+        {open ? "Hide Models" : "Available Models"}
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
       {open && <ModelSelector sporaKeyId={sporaKeyId} />}
     </div>

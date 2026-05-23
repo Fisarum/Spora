@@ -24,6 +24,13 @@ export const keysApi = {
   ): Promise<ProviderKey> =>
     invoke("add_provider_key", { provider, label, apiKey }),
 
+  updateProviderKey: (params: {
+    id: string;
+    provider: Provider;
+    label: string;
+    apiKey?: string;
+  }): Promise<void> => invoke("update_provider_key", { params }),
+
   deleteProviderKey: (id: string): Promise<void> =>
     invoke("delete_provider_key", { id }),
 
@@ -38,6 +45,16 @@ export const keysApi = {
     dailyLimitUsd: number | null;
     monthlyLimitUsd: number | null;
   }): Promise<SporaKey> => invoke("create_spora_key", { params }),
+
+  updateSporaKey: (params: {
+    id: string;
+    label: string;
+    location: string;
+    allowedProviders: Provider[] | null;
+    allowedModels: string[] | null;
+    dailyLimitUsd: number | null;
+    monthlyLimitUsd: number | null;
+  }): Promise<void> => invoke("update_spora_key", { params }),
 
   revokeSporaKey: (id: string): Promise<void> =>
     invoke("revoke_spora_key", { id }),
