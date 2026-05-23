@@ -5,7 +5,6 @@ import {
   Download,
   Database,
   Server,
-  Shield,
   Loader2,
   Upload,
   CheckCircle,
@@ -237,59 +236,6 @@ export default function SettingsTab({ onGatewayStatusChange }: Props) {
                 </button>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Features */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-3 border-b border-primary/10 pb-3">
-            <Shield size={20} className="text-primary" />
-            <h3 className="text-sm tracking-[0.2em] text-primary uppercase font-medium">Features</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                key: "semanticCacheEnabled" as const,
-                label: "Semantic Caching",
-                desc: "Cache similar prompts locally",
-                badge: "Coming Soon",
-              },
-              {
-                key: "mcpEnabled" as const,
-                label: "Model Context Protocol",
-                desc: "Enable MCP bridge for agents",
-                badge: "Coming Soon",
-              },
-            ].map((feature) => (
-              <div key={feature.key} className="p-6 rounded border border-white/5 bg-white/2 flex items-center justify-between group transition-all hover:border-white/10">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground/80 tracking-tight">{feature.label}</span>
-                    {feature.badge && (
-                      <span className="text-[9px] uppercase tracking-tighter px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/10 font-medium">
-                        {feature.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-foreground/30">{feature.desc}</p>
-                </div>
-                <button
-                  onClick={() =>
-                    setSettings({ ...settings, [feature.key]: !settings[feature.key] })
-                  }
-                  disabled={!!feature.badge}
-                  className={`relative w-10 h-5 rounded-full transition-all disabled:opacity-20 ${
-                    settings[feature.key] ? "bg-primary" : "bg-white/10"
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${
-                      settings[feature.key] ? "left-6" : "left-1"
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
           </div>
         </section>
 

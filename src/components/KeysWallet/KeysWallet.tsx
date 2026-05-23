@@ -13,7 +13,9 @@ import {
 import { keysApi, settingsApi } from "../../lib/tauri";
 import type { ProviderKey, SporaKey, Provider } from "../../lib/types";
 import AddProviderKeyModal from "./AddProviderKeyModal";
+import EditProviderKeyModal from "./EditProviderKeyModal";
 import CreateSporaKeyModal from "./CreateSporaKeyModal";
+import EditSporaKeyModal from "./EditSporaKeyModal";
 import { ModelSelectorToggle } from "./ModelSelector";
 
 const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string }> = {
@@ -31,7 +33,9 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
   const [providerKeys, setProviderKeys] = useState<ProviderKey[]>([]);
   const [sporaKeys, setSporaKeys] = useState<SporaKey[]>([]);
   const [showAddProvider, setShowAddProvider] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<ProviderKey | null>(null);
   const [showCreateSpora, setShowCreateSpora] = useState(false);
+  const [editingSpora, setEditingSpora] = useState<SporaKey | null>(null);
   const [revealedTokens, setRevealedTokens] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [gatewayRunning, setGatewayRunning] = useState(false);
@@ -127,20 +131,20 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
       <div className="rounded border border-primary/10 bg-white/2 p-4 flex items-center justify-between transition-all group">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-[10px] tracking-wider text-foreground uppercase font-medium">Proxy Gateway</h3>
+            <h3 className="text-xs tracking-[0.2em] text-foreground uppercase font-semibold">Proxy Gateway</h3>
           </div>
-          <p className="text-sm text-foreground mt-0.5 tracking-tight uppercase">
+          <p className="text-xl text-primary mt-1 tracking-tight font-bold uppercase">
             LOCALHOST:{gatewayPort}/V1
           </p>
-          <p className="text-[9px] text-foreground/40 uppercase tracking-widest mt-0.5">Universal Adapter Protocol</p>
+          <p className="text-[10px] text-foreground/40 uppercase tracking-[0.2em] mt-1 font-medium">Universal Adapter Protocol</p>
         </div>
         <button
           onClick={toggleGateway}
           disabled={gatewayLoading}
-          className={`flex items-center gap-2 px-4 py-2 rounded text-[10px] uppercase tracking-wider transition-all duration-200 ${
+          className={`flex items-center gap-2 px-6 py-3 rounded text-[11px] uppercase tracking-[0.15em] font-bold transition-all duration-200 border-2 ${
             gatewayRunning
-              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"
-              : "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+              ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/30"
+              : "bg-primary text-background hover:bg-primary/90 border-primary"
           }`}
         >
           {gatewayLoading ? (
@@ -152,15 +156,15 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
 
       {/* Provider Keys */}
       <section>
-        <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center justify-between mb-4 px-1">
           <div>
-            <h2 className="text-[10px] tracking-wider text-foreground uppercase font-medium">Provider Keys</h2>
+            <h2 className="text-xs tracking-[0.2em] text-foreground uppercase font-semibold">Provider Credentials</h2>
           </div>
           <button
             onClick={() => setShowAddProvider(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 rounded text-[11px] uppercase tracking-widest bg-primary text-background font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
           >
-            <Plus size={12} /> Add Credential
+            <Plus size={14} strokeWidth={3} /> Add Provider
           </button>
         </div>
 
@@ -196,12 +200,20 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
                       {key.maskedKey}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteProviderKey(key.id)}
-                    className="p-1.5 rounded text-primary/20 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => setEditingProvider(key)}
+                      className="px-3 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold text-primary hover:bg-primary/10 border border-primary/20 transition-all"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProviderKey(key.id)}
+                      className="p-1.5 rounded text-primary/20 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -211,15 +223,15 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
 
       {/* Spora Keys */}
       <section>
-        <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center justify-between mb-4 px-1">
           <div>
-            <h2 className="text-[10px] tracking-wider text-foreground uppercase font-medium">Virtual Access Keys</h2>
+            <h2 className="text-xs tracking-[0.2em] text-foreground uppercase font-semibold">Spora Keys</h2>
           </div>
           <button
             onClick={() => setShowCreateSpora(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 rounded text-[11px] uppercase tracking-widest bg-primary text-background font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
           >
-            <Plus size={12} /> Issue Key
+            <Plus size={14} strokeWidth={3} /> Issue Spora Key
           </button>
         </div>
 
@@ -241,91 +253,101 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-foreground">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-lg font-bold text-foreground tracking-tight">
                         {key.label}
                       </span>
                       {key.location && (
-                        <span className="text-[9px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/10 uppercase font-medium">
+                        <span className="text-[10px] px-2.5 py-1 rounded bg-primary/10 text-primary border border-primary/20 uppercase font-bold tracking-wider">
                           {key.location}
                         </span>
                       )}
                       {!key.active && (
-                        <span className="text-[9px] px-2 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 font-medium uppercase">
+                        <span className="text-[10px] px-2.5 py-1 rounded bg-red-500/10 text-red-500 border border-red-500/20 font-bold uppercase tracking-wider">
                           TERMINATED
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 mt-3">
-                      <div className="flex-1 bg-background/50 rounded px-3 py-2 border border-primary/5 flex items-center min-w-0">
-                        <code className="text-[11px] font-mono text-foreground/60 truncate flex-1">
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className="flex-1 bg-black/40 rounded-lg px-4 py-3 border border-white/5 flex items-center min-w-0 group/token">
+                        <code className="text-sm font-mono text-foreground/70 truncate flex-1">
                           {revealedTokens.has(key.id)
                             ? key.token
                             : key.token.slice(0, 16).toUpperCase() + " ••••••••••••••"}
                         </code>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleReveal(key.id)}
-                          className="p-1.5 text-foreground/30 hover:text-foreground hover:bg-foreground/10 rounded transition-all relative group/tooltip"
+                          className="p-3 text-foreground/40 hover:text-primary hover:bg-primary/10 border border-white/5 rounded-lg transition-all relative group/tooltip"
                         >
                           {revealedTokens.has(key.id) ? (
-                            <EyeOff size={16} />
+                            <EyeOff size={18} />
                           ) : (
-                            <Eye size={16} />
+                            <Eye size={18} />
                           )}
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background border border-foreground/20 text-foreground text-[9px] uppercase tracking-wider rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            {revealedTokens.has(key.id) ? "Hide Token" : "Reveal Token"}
-                          </span>
                         </button>
                         <button
                           onClick={() => copyToken(key.id, key.token)}
-                          className="p-1.5 text-foreground/30 hover:text-foreground hover:bg-foreground/10 rounded transition-all relative group/tooltip"
+                          className="p-3 text-foreground/40 hover:text-primary hover:bg-primary/10 border border-white/5 rounded-lg transition-all relative group/tooltip"
                         >
                           {copiedId === key.id ? (
-                            <Check size={16} className="text-foreground" />
+                            <Check size={18} className="text-primary" />
                           ) : (
-                            <Copy size={16} />
+                            <Copy size={18} />
                           )}
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background border border-foreground/20 text-foreground text-[9px] uppercase tracking-wider rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            {copiedId === key.id ? "Copied!" : "Copy Token"}
-                          </span>
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-6">
                       {key.allowedProviders && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] uppercase tracking-wider text-foreground/40 font-medium">Uplinks</span>
-                          <span className="text-[10px] text-foreground/70 uppercase font-medium">{key.allowedProviders.join(", ")}</span>
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold">Uplinks</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {key.allowedProviders.map(p => (
+                              <span key={p} className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-foreground/70 border border-white/10 uppercase font-bold">{p}</span>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      {(key.dailyLimitUsd != null || key.monthlyLimitUsd != null) && (
-                        <div className="flex gap-6">
-                          {key.dailyLimitUsd != null && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] uppercase tracking-wider text-foreground/60 font-medium">Daily Quota</span>
-                              <span className="text-sm text-foreground font-medium tracking-tight">${key.dailyLimitUsd}</span>
-                            </div>
-                          )}
+                      
+                      {key.dailyLimitUsd != null && (
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold">Daily Limit</span>
+                          <div className="text-xl font-bold text-foreground tracking-tight">${key.dailyLimitUsd}</div>
+                        </div>
+                      )}
+
+                      {key.monthlyLimitUsd != null && (
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold">Monthly Limit</span>
+                          <div className="text-xl font-bold text-foreground tracking-tight">${key.monthlyLimitUsd}</div>
                         </div>
                       )}
                     </div>
 
                     {key.active && (
-                      <ModelSelectorToggle sporaKeyId={key.id} />
+                      <div className="mt-6 border-t border-white/5 pt-4">
+                        <ModelSelectorToggle sporaKeyId={key.id} />
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => setEditingSpora(key)}
+                      className="px-4 py-2 rounded text-[10px] uppercase tracking-widest font-bold text-primary hover:bg-primary/10 border border-primary/20 transition-all"
+                    >
+                      Edit
+                    </button>
                     {key.active && (
                       <button
                         onClick={() => handleRevokeSporaKey(key.id)}
-                        className="p-1.5 rounded text-primary/30 hover:text-orange-500 hover:bg-orange-500/10 transition-all relative group/tooltip"
+                        className="p-2 rounded text-primary/30 hover:text-orange-500 hover:bg-orange-500/10 transition-all relative group/tooltip"
                       >
-                        <Shield size={16} />
+                        <Shield size={18} />
                         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background border border-orange-500/20 text-orange-500 text-[9px] uppercase tracking-wider rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                           Revoke Access
                         </span>
@@ -333,9 +355,9 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
                     )}
                     <button
                       onClick={() => handleDeleteSporaKey(key.id)}
-                      className="p-1.5 rounded text-primary/30 hover:text-red-500 hover:bg-red-500/10 transition-all relative group/tooltip"
+                      className="p-2 rounded text-primary/30 hover:text-red-500 hover:bg-red-500/10 transition-all relative group/tooltip"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                       <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background border border-red-500/20 text-red-500 text-[9px] uppercase tracking-wider rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                         Purge Identity
                       </span>
@@ -358,12 +380,34 @@ export default function KeysWallet({ onGatewayStatusChange }: Props) {
         />
       )}
 
+      {editingProvider && (
+        <EditProviderKeyModal
+          providerKey={editingProvider}
+          onClose={() => setEditingProvider(null)}
+          onUpdated={(key) => {
+            setProviderKeys((prev) => prev.map((k) => (k.id === key.id ? key : k)));
+            setEditingProvider(null);
+          }}
+        />
+      )}
+
       {showCreateSpora && (
         <CreateSporaKeyModal
           onClose={() => setShowCreateSpora(false)}
           onCreated={(key) => {
-            setSporaKeys((prev) => [...prev, key]);
+            setSporaKeys((prev) => [key, ...prev]);
             setShowCreateSpora(false);
+          }}
+        />
+      )}
+
+      {editingSpora && (
+        <EditSporaKeyModal
+          sporaKey={editingSpora}
+          onClose={() => setEditingSpora(null)}
+          onUpdated={(key) => {
+            setSporaKeys((prev) => prev.map((k) => (k.id === key.id ? key : k)));
+            setEditingSpora(null);
           }}
         />
       )}

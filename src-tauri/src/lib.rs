@@ -51,9 +51,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::keys::list_provider_keys,
             commands::keys::add_provider_key,
+            commands::keys::update_provider_key,
             commands::keys::delete_provider_key,
             commands::keys::list_spora_keys,
             commands::keys::create_spora_key,
+            commands::keys::update_spora_key,
             commands::keys::revoke_spora_key,
             commands::keys::delete_spora_key,
             commands::analytics::get_usage_stats,
