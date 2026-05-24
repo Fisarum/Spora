@@ -10,7 +10,7 @@ services:
     ports:
       # Bind only to localhost on the host — keeps the proxy private to the machine.
       # Change to "4141:4141" for a shared team/server deployment behind a firewall.
-      - "127.0.0.1:4141:4141"
+      - "127.0.0.1:${SPORA_PORT:-4141}:${SPORA_PORT:-4141}"
 
     volumes:
       # Named volume persists the SQLite database across container restarts and upgrades.
@@ -19,13 +19,14 @@ services:
 
     environment:
       SPORA_LISTEN_ADDR: "0.0.0.0"
+      SPORA_PORT: "${SPORA_PORT:-4141}"
       SPORA_DB_PATH: "/data/spora.db"
+      SPORA_ANALYTICS_MODE: "local"
       RUST_LOG: "info"
-      # Override the gateway port if needed (must also update the ports mapping above)
-      # SPORA_PORT: "4141"
+      # Override the gateway port with SPORA_PORT=4242 ./install.sh if needed.
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4141/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:$${SPORA_PORT:-4141}/health"]
       interval: 30s
       timeout: 5s
       retries: 3

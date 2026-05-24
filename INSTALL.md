@@ -1,80 +1,130 @@
 # Spora Installation Guide
 
-Spora can be installed as a full desktop application (with a GUI) or as a headless background daemon (for servers/CLI tools).
+Spora has two runtimes:
 
-## Quick Start (Daemon Only)
+- Docker gateway: headless `spora-daemon` for local AI tools and self-hosted use.
+- Desktop app: Tauri UI for managing keys, settings, logs, and analytics.
 
-If you only need the background engine for tools like Cursor or Claude Code:
+For a first run, use Docker. It avoids local Rust, Node, WebKit, and platform build dependencies.
 
-### macOS & Linux (inc. WSL)
+## Docker Quick Start
+
+From a checkout of this repository:
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fisarum/Spora/main/install.sh | sh
+./install.sh
 ```
 
-### Windows
-Run this in PowerShell as Administrator:
+The installer builds and starts the gateway with Docker Compose, stores SQLite state in the named Docker volume `spora_data`, and waits for health before reporting success.
+
+Expected output includes:
+
+```text
+Spora is running.
+
+Base URL: http://localhost:4141/v1
+Health:   http://localhost:4141/health
+```
+
+## Platform Notes
+
+### macOS Apple Silicon
+
+1. Install Docker Desktop for Mac with Apple Silicon support.
+2. Start Docker Desktop.
+3. Run `./install.sh` from the repository.
+
+The image is built for `linux/arm64` on Apple Silicon.
+
+### macOS Intel
+
+1. Install Docker Desktop for Mac.
+2. Start Docker Desktop.
+3. Run `./install.sh` from the repository.
+
+The image is built for `linux/amd64` on Intel Macs.
+
+### Linux x64
+
+1. Install Docker Engine and the Docker Compose plugin.
+2. Make sure your user can run Docker, or run the install command with the Docker permissions your system requires.
+3. Run `./install.sh` from the repository.
+
+### Ubuntu
+
+Install Docker Engine from Docker's Ubuntu instructions, then run:
+
+```bash
+./install.sh
+```
+
+### Windows with Docker Desktop
+
+Recommended path:
+
+1. Install Docker Desktop for Windows.
+2. Enable the WSL2 backend in Docker Desktop.
+3. Enable integration for your Ubuntu WSL distro.
+4. Open Ubuntu/WSL, clone the repository, and run `./install.sh`.
+
+You can also run this from PowerShell in the repository:
+
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Fisarum/Spora/main/install-daemon.ps1'))
+.\install.ps1
 ```
 
----
+### WSL Ubuntu
 
-## Full Desktop App Build (GUI)
+Use Docker Desktop with WSL2 integration enabled for the Ubuntu distro, then run:
 
-To build the interactive dashboard and the gateway, follow these steps.
-
-### Prerequisites
-- **Node.js**: v18 or later
-- **Rust**: v1.86 or later (required for Edition 2024 support)
-- **System Dependencies**:
-  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-  - **Linux**: `build-essential`, `curl`, `wget`, `libssl-dev`, `libwebkit2gtk-4.1-dev`, `librsvg2-dev`
-  - **Windows**: [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) and C++ Build Tools.
-
-### Build Steps
 ```bash
-# 1. Clone & Enter
-git clone https://github.com/Fisarum/Spora.git
-cd Spora
-
-# 2. Install Frontend Dependencies
-npm install
-
-# 3. Build for your OS
-npm run tauri build
+./install.sh
 ```
-The resulting installer will be located in `src-tauri/target/release/bundle/`.
 
----
-
-## 🐳 Docker Installation (Universal Headless)
-
-Docker is the most stable way to run the Spora engine on any platform without installing system dependencies.
+## Verify
 
 ```bash
-# Build and start in detached mode
-docker compose up --build -d
-
-# Verify connectivity
 curl http://localhost:4141/health
 ```
 
----
+Expected response:
 
-## 📋 Comparison of Methods
+```json
+{"service":"spora-gateway","status":"ok"}
+```
 
-| Feature | Standard Build | `install.sh` | Docker |
-| :--- | :--- | :--- | :--- |
-| **Output** | `.dmg` / `.exe` / `.deb` | Background Service | Container |
-| **GUI Dashboard** | ✅ Yes | ❌ No | ❌ No |
-| **Auto-update** | ✅ Built-in | ❌ Manual | ❌ Via Image |
-| **Platform** | Mac, Win, Linux | Mac, Linux, WSL | Any w/ Docker |
+OpenAI-compatible tools should use:
 
----
+- Base URL: `http://localhost:4141/v1`
+- API key: a Spora key from your local Spora database
 
-## ⚙️ Configuration
+The gateway can boot without provider API keys. Model requests require a valid Spora key and a configured provider key.
 
-Once running, Spora is available at `http://localhost:4141`.
+## Configuration
 
-- **Base URL for AI Tools**: `http://localhost:4141/v1`
-- **API Key**: `sk-spora-xxxx` (Generate yours in the Spora Dashboard)
+Docker Compose sets these defaults:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SPORA_LISTEN_ADDR` | `0.0.0.0` | Interface inside the container |
+| `SPORA_PORT` | `4141` | Gateway HTTP port |
+| `SPORA_DB_PATH` | `/data/spora.db` | SQLite database path |
+| `SPORA_ANALYTICS_MODE` | `local` | Placeholder for local-only analytics mode |
+| `RUST_LOG` | `info` | Rust logging level |
+
+Persistent state lives in the named Docker volume `spora_data`.
+
+## Desktop App Development
+
+Use this path only when developing the Tauri UI:
+
+```bash
+npm install
+npx tauri dev
+```
+
+Build a desktop release:
+
+```bash
+npx tauri build
+```

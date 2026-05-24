@@ -14,6 +14,21 @@ All requests to Spora must include your Spora API key in the Authorization heade
 
 ## Supported Endpoints
 
+### Health
+`GET /health`
+
+Does not require authentication. Use it to verify the gateway is running:
+
+```bash
+curl http://localhost:4141/health
+```
+
+Expected response:
+
+```json
+{"service":"spora-gateway","status":"ok"}
+```
+
 ### Chat Completions
 `POST /chat/completions`
 

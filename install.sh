@@ -1,172 +1,176 @@
 #!/usr/bin/env sh
-# Spora Gateway — universal daemon installer
-# Supports: macOS (arm64/x86_64), Linux (arm64/x86_64)
-# Windows: use install-daemon.ps1
-#
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Fisarum/Spora/main/install.sh | sh
-#   or: sh install.sh [--version v0.1.3]
+# Spora Gateway - Docker-first installer
+# Supports macOS, Linux, Ubuntu, and WSL with Docker Engine or Docker Desktop.
 
-set -e
+set -eu
 
-REPO="Fisarum/Spora"
-BIN_NAME="spora-daemon"
-INSTALL_DIR="${HOME}/.local/bin"
+PROJECT_NAME="${SPORA_COMPOSE_PROJECT:-spora}"
+SERVICE_NAME="${SPORA_SERVICE_NAME:-spora-gateway}"
+PORT="${SPORA_PORT:-4141}"
+HEALTH_URL="http://localhost:${PORT}/health"
+BASE_URL="http://localhost:${PORT}/v1"
+IMAGE="${SPORA_IMAGE:-ghcr.io/fisarum/spora-gateway:latest}"
 
-# ── Colour helpers ─────────────────────────────────────────────────────────────
-green()  { printf '\033[0;32m%s\033[0m\n' "$*"; }
+green() { printf '\033[0;32m%s\033[0m\n' "$*"; }
 yellow() { printf '\033[0;33m%s\033[0m\n' "$*"; }
-red()    { printf '\033[0;31m%s\033[0m\n' "$*"; }
-die()    { red "Error: $*" >&2; exit 1; }
+red() { printf '\033[0;31m%s\033[0m\n' "$*" >&2; }
+die() { red "Error: $*"; exit 1; }
 
-# ── Detect OS ─────────────────────────────────────────────────────────────────
-OS="$(uname -s)"
-case "$OS" in
-    Darwin) PLATFORM="macos" ;;
-    Linux)  PLATFORM="linux" ;;
-    *)      die "Unsupported OS: $OS. On Windows, use install-daemon.ps1." ;;
-esac
+usage() {
+    cat <<USAGE
+Usage: ./install.sh [--no-build] [--image IMAGE]
 
-# ── Detect arch ───────────────────────────────────────────────────────────────
-ARCH="$(uname -m)"
-case "$ARCH" in
-    x86_64)        ARCH_SLUG="x86_64" ;;
-    arm64|aarch64) ARCH_SLUG="aarch64" ;;
-    *)             die "Unsupported architecture: $ARCH" ;;
-esac
+Starts the Spora gateway with Docker Compose and waits for:
+  ${HEALTH_URL}
 
-# ── Resolve version ───────────────────────────────────────────────────────────
-VERSION=""
+Options:
+  --no-build      Use a registry image instead of building from this checkout.
+  --image IMAGE   Registry image to use with --no-build.
+USAGE
+}
+
+BUILD_LOCAL=1
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        --version) VERSION="$2"; shift 2 ;;
-        *) die "Unknown argument: $1" ;;
+        --no-build)
+            BUILD_LOCAL=0
+            shift
+            ;;
+        --image)
+            [ "$#" -ge 2 ] || die "--image requires a value"
+            IMAGE="$2"
+            BUILD_LOCAL=0
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            die "Unknown argument: $1"
+            ;;
     esac
 done
 
-if [ -z "$VERSION" ]; then
-    yellow "Fetching latest release version..."
-    VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-        | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
-    [ -n "$VERSION" ] || die "Could not determine latest version. Pass --version manually."
-fi
-
-green "Installing Spora daemon ${VERSION} (${PLATFORM}/${ARCH_SLUG})..."
-
-# ── Download binary ───────────────────────────────────────────────────────────
-BINARY_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BIN_NAME}-${PLATFORM}-${ARCH_SLUG}"
-TMP="$(mktemp)"
-
-yellow "Downloading ${BINARY_URL}..."
-if ! curl -fsSL --progress-bar "$BINARY_URL" -o "$TMP"; then
-    red "Download failed (404). The pre-built binary for ${PLATFORM}/${ARCH_SLUG} might not be available for ${VERSION}."
-    if command -v cargo >/dev/null 2>&1; then
-        yellow "Rust/Cargo detected. Attempting to build from source instead..."
-        if [ -d "src-tauri" ]; then
-            cd src-tauri && cargo build --release --no-default-features --features daemon --bin spora-daemon
-            mv target/release/spora-daemon "$TMP"
-            cd ..
+OS="$(uname -s 2>/dev/null || printf unknown)"
+case "$OS" in
+    Darwin) PLATFORM="macOS" ;;
+    Linux)
+        if grep -qi microsoft /proc/version 2>/dev/null; then
+            PLATFORM="WSL"
         else
-            die "Source directory 'src-tauri' not found. Please clone the repo and run 'make build-daemon'."
+            PLATFORM="Linux"
         fi
-    else
-        die "Download failed and 'cargo' not found. Please check https://github.com/${REPO}/releases or install Rust."
-    fi
+        ;;
+    *) die "Unsupported OS: ${OS}. On Windows, use Docker Desktop with WSL2 or run install.ps1." ;;
+esac
+
+print_docker_help() {
+    red "Docker was not found or is not running."
+    case "$PLATFORM" in
+        macOS)
+            red "Install Docker Desktop for Mac, start it, then run ./install.sh again:"
+            red "  https://docs.docker.com/desktop/install/mac-install/"
+            ;;
+        WSL)
+            red "Install Docker Desktop for Windows, enable WSL2 integration for your Ubuntu distro, then run ./install.sh again:"
+            red "  https://docs.docker.com/desktop/wsl/"
+            ;;
+        Linux)
+            red "Install Docker Engine and the Compose plugin, then run ./install.sh again:"
+            red "  https://docs.docker.com/engine/install/"
+            ;;
+    esac
+}
+
+command -v docker >/dev/null 2>&1 || { print_docker_help; exit 1; }
+docker info >/dev/null 2>&1 || { print_docker_help; exit 1; }
+
+if docker compose version >/dev/null 2>&1; then
+    COMPOSE="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE="docker-compose"
+else
+    die "Docker Compose is missing. Install Docker Desktop or the Docker Compose plugin."
 fi
 
-mkdir -p "$INSTALL_DIR"
-mv "$TMP" "${INSTALL_DIR}/${BIN_NAME}"
-chmod +x "${INSTALL_DIR}/${BIN_NAME}"
+health_check() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsS "$HEALTH_URL" >/dev/null 2>&1
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO- "$HEALTH_URL" >/dev/null 2>&1
+    else
+        die "Need curl or wget to verify ${HEALTH_URL}"
+    fi
+}
 
-# ── Add to PATH warning ───────────────────────────────────────────────────────
-case ":${PATH}:" in
-    *":${INSTALL_DIR}:"*) ;;
-    *) yellow "Note: add '${INSTALL_DIR}' to your PATH (e.g. in ~/.zshrc or ~/.bashrc):" ;
-       yellow "  export PATH=\"\$PATH:${INSTALL_DIR}\"" ;;
-esac
+wait_for_health() {
+    yellow "Waiting for Spora health check at ${HEALTH_URL}..."
+    i=0
+    while [ "$i" -lt 60 ]; do
+        if health_check; then
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 1
+    done
+    return 1
+}
 
-# ── Install platform daemon service ───────────────────────────────────────────
-case "$PLATFORM" in
-    macos)
-        PLIST_DIR="${HOME}/Library/LaunchAgents"
-        PLIST_PATH="${PLIST_DIR}/com.spora.gateway.daemon.plist"
-        mkdir -p "$PLIST_DIR"
+green "Starting Spora gateway with Docker on ${PLATFORM}..."
 
-        cat > "$PLIST_PATH" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.spora.gateway.daemon</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>${INSTALL_DIR}/${BIN_NAME}</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>${HOME}/Library/Logs/spora-daemon.log</string>
-    <key>StandardErrorPath</key>
-    <string>${HOME}/Library/Logs/spora-daemon-error.log</string>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>RUST_LOG</key>
-        <string>info</string>
-    </dict>
-</dict>
-</plist>
-PLIST
-
-        launchctl unload "$PLIST_PATH" 2>/dev/null || true
-        launchctl load "$PLIST_PATH"
-        green "Spora daemon installed and started (macOS Launch Agent)."
-        ;;
-
-    linux)
-        SYSTEMD_DIR="${HOME}/.config/systemd/user"
-        mkdir -p "$SYSTEMD_DIR"
-
-        cat > "${SYSTEMD_DIR}/spora-daemon.service" <<SERVICE
-[Unit]
-Description=Spora Gateway Daemon
-Documentation=https://github.com/Fisarum/Spora
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-ExecStart=${INSTALL_DIR}/${BIN_NAME}
-Restart=always
-RestartSec=5
-Environment=RUST_LOG=info
-
-[Install]
-WantedBy=default.target
-SERVICE
-
-        systemctl --user daemon-reload
-        systemctl --user enable --now spora-daemon
-        green "Spora daemon installed and started (systemd user service)."
-        ;;
-esac
-
-# ── Verify ────────────────────────────────────────────────────────────────────
-yellow "Waiting for gateway to start..."
-sleep 2
-
-if curl -fsSL http://localhost:4141/health >/dev/null 2>&1; then
-    green "Gateway is up at http://localhost:4141"
-    green ""
-    green "  Base URL : http://localhost:4141/v1"
-    green "  Health   : http://localhost:4141/health"
-    green ""
-    green "Configure your AI tool (Cursor, Claude Code, etc.):"
-    green "  base_url = http://localhost:4141/v1"
-    green "  api_key  = sk-spora-<your-token>"
+COMPOSE_FILE=""
+if [ "$BUILD_LOCAL" -eq 1 ] && [ -f "docker-compose.yml" ] && [ -f "Dockerfile" ]; then
+    $COMPOSE -p "$PROJECT_NAME" up --build -d "$SERVICE_NAME"
 else
-    yellow "Gateway did not respond yet — it may still be starting."
-    yellow "Check with: curl http://localhost:4141/health"
+    TMP_DIR="${TMPDIR:-/tmp}/spora-install-compose"
+    mkdir -p "$TMP_DIR"
+    COMPOSE_FILE="${TMP_DIR}/compose.yml"
+    cat > "$COMPOSE_FILE" <<YAML
+services:
+  spora-gateway:
+    image: ${IMAGE}
+    container_name: spora-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PORT}:${PORT}"
+    volumes:
+      - spora_data:/data
+    environment:
+      SPORA_LISTEN_ADDR: "0.0.0.0"
+      SPORA_PORT: "${PORT}"
+      SPORA_DB_PATH: "/data/spora.db"
+      SPORA_ANALYTICS_MODE: "local"
+      RUST_LOG: "info"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${PORT}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  spora_data:
+    driver: local
+YAML
+    $COMPOSE -p "$PROJECT_NAME" -f "$COMPOSE_FILE" up -d
+fi
+
+if wait_for_health; then
+    green "Spora is running."
+    green ""
+    green "Base URL: ${BASE_URL}"
+    green "Health:   ${HEALTH_URL}"
+    green ""
+    green "Use this base URL in OpenAI-compatible tools."
+    green "Use a Spora key from your local Spora database when proxying model requests."
+else
+    red "Spora did not become healthy within 60 seconds."
+    red "Recent container logs:"
+    if [ -n "$COMPOSE_FILE" ]; then
+        $COMPOSE -p "$PROJECT_NAME" -f "$COMPOSE_FILE" logs --tail=80 "$SERVICE_NAME" >&2 || true
+    else
+        $COMPOSE -p "$PROJECT_NAME" logs --tail=80 "$SERVICE_NAME" >&2 || true
+    fi
+    exit 1
 fi
