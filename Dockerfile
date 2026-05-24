@@ -40,6 +40,7 @@ FROM debian:12-slim AS runtime
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --system --no-create-home --shell /bin/false spora
@@ -57,11 +58,12 @@ USER spora
 ENV SPORA_LISTEN_ADDR=0.0.0.0
 ENV SPORA_DB_PATH=/data/spora.db
 ENV SPORA_PORT=4141
+ENV SPORA_ANALYTICS_MODE=local
 ENV RUST_LOG=info
 
 EXPOSE 4141
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["sh", "-c", "wget -qO- http://localhost:4141/health || exit 1"]
+    CMD curl -fsS "http://localhost:${SPORA_PORT:-4141}/health"
 
 ENTRYPOINT ["/usr/local/bin/spora-daemon"]

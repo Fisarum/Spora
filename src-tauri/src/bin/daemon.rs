@@ -1,15 +1,20 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use spora_lib::db;
 use spora_lib::proxy;
 use spora_lib::state::AppState;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+fn env_u16(name: &str) -> Option<u16> {
+    std::env::var(name)
+        .ok()
+        .and_then(|value| value.parse::<u16>().ok())
+}
 
 fn db_path() -> std::path::PathBuf {
     if let Ok(path) = std::env::var("SPORA_DB_PATH") {
         return std::path::PathBuf::from(path);
     }
-    let data_dir = dirs::data_dir()
-        .expect("Failed to find user data directory");
+    let data_dir = dirs::data_dir().expect("Failed to find user data directory");
     data_dir.join("com.spora.gateway").join("spora.db")
 }
 
@@ -26,6 +31,10 @@ async fn main() {
 
     let db_path = db_path();
     tracing::info!("Database path: {}", db_path.display());
+    tracing::info!(
+        "Analytics mode: {}",
+        std::env::var("SPORA_ANALYTICS_MODE").unwrap_or_else(|_| "local".to_string())
+    );
 
     if let Some(parent) = db_path.parent() {
         std::fs::create_dir_all(parent).expect("Failed to create data directory");
@@ -36,7 +45,9 @@ async fn main() {
 
     let app_state = Arc::new(RwLock::new(AppState::new(conn)));
 
-    let port = {
+    let port = if let Some(port) = env_u16("SPORA_PORT") {
+        port
+    } else {
         let s = app_state.read().await;
         s.settings.gateway_port
     };

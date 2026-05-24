@@ -16,7 +16,7 @@ use tauri::{AppHandle, Emitter};
 pub type AppHandle = ();
 
 use crate::state::AppState;
-use crate::proxy::middleware::{extract_spora_key, resolve_provider_key, resolve_provider_key_for_model, check_spend_cap};
+use crate::proxy::middleware::{check_spend_cap, extract_spora_key, resolve_provider_key_for_model};
 use crate::proxy::adapters::{openai, anthropic, gemini, openrouter};
 
 #[derive(Clone)]
@@ -246,6 +246,7 @@ async fn chat_completions(
         let req_body_str = serde_json::to_string(&body).unwrap_or_default();
         let res_body_str = response_body.as_ref().map(|b| serde_json::to_string(b).unwrap_or_default());
 
+        #[cfg(feature = "gui")]
         let spora_key_label: Option<String> = db.query_row(
             "SELECT label FROM spora_keys WHERE id = ?1",
             rusqlite::params![if spora_key_id.is_empty() { None } else { Some(&spora_key_id) }],

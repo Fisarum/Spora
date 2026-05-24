@@ -1,120 +1,133 @@
-# Spora Gateway — Docker & Universal Deployment
+# Spora Docker Deployment
 
-Spora ships in two distribution modes:
+Docker runs the headless Spora gateway (`spora-daemon`) only. The Tauri desktop UI is not part of the container.
 
-| Mode | Best for | Requires |
-|------|----------|----------|
-| **Desktop app** (Tauri) | Individual developers | macOS / Windows / Linux desktop |
-| **Docker image** (headless) | Corporate pilots, shared infra, servers | Docker Engine / Docker Desktop |
-| **Binary installer** (`install.sh`) | Developers without Docker | `curl` + `sh` (macOS/Linux) or PowerShell (Windows) |
+## One-command Local Run
 
----
-
-## Docker — One-command deployment
-
-### Option A: Pre-built image from GitHub Container Registry
+From a checkout of the repository:
 
 ```bash
-docker compose up -d
-```
-
-The default `docker-compose.yml` pulls `ghcr.io/fisarum/spora-gateway:latest`, mounts a named volume for the SQLite database, and binds the proxy to `127.0.0.1:4141` on the host.
-
-### Option B: Build the image locally
-
-```bash
-docker build -t spora-gateway .
-docker run -d \
-  --name spora-gateway \
-  --restart unless-stopped \
-  -p 127.0.0.1:4141:4141 \
-  -v spora_data:/data \
-  -e RUST_LOG=info \
-  spora-gateway
-```
-
-### Shared team/server deployment (LAN)
-
-To expose the gateway to other machines on your network, change the port binding in `docker-compose.yml`:
-
-```yaml
-ports:
-  - "4141:4141"   # binds to all host interfaces
-```
-
-Then point your AI tools at `http://<server-ip>:4141/v1`.
-
-> **Security note:** if the gateway is exposed on a LAN, ensure all clients use a valid `sk-spora-*` token. The spend-cap and key-revocation features in the Spora desktop app apply to these tokens.
-
----
-
-## Environment variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SPORA_LISTEN_ADDR` | `127.0.0.1` (binary) / `0.0.0.0` (Docker) | Interface the proxy binds to |
-| `SPORA_DB_PATH` | platform data dir | Override the SQLite database path |
-| `RUST_LOG` | `info` | Log verbosity (`trace`, `debug`, `info`, `warn`, `error`) |
-
----
-
-## Per-developer install (no Docker)
-
-### macOS / Linux
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Fisarum/Spora/main/install.sh | sh
+./install.sh
 ```
 
 The script:
-1. Detects your OS and CPU architecture
-2. Downloads the matching pre-built `spora-daemon` binary from GitHub Releases
-3. Installs it to `~/.local/bin/`
-4. Registers a **Launch Agent** (macOS) or **systemd user service** (Linux) for auto-start on login
 
-To install a specific version:
+1. Checks that Docker and Docker Compose are available.
+2. Builds the daemon image from the local source tree.
+3. Starts the `spora-gateway` service.
+4. Persists SQLite state in the named volume `spora_data`.
+5. Waits for `http://localhost:4141/health` before printing success.
+
+## Manual Compose
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fisarum/Spora/main/install.sh | sh -s -- --version v0.1.3
+docker compose up --build -d
+curl http://localhost:4141/health
 ```
 
-### Windows
+The gateway listens on the host at:
 
-Run PowerShell as Administrator:
+- Base URL: `http://localhost:4141/v1`
+- Health: `http://localhost:4141/health`
+
+## Registry Image Mode
+
+When a published image is available, the installer can skip local builds:
+
+```bash
+./install.sh --no-build
+```
+
+Or specify an image:
+
+```bash
+./install.sh --image ghcr.io/fisarum/spora-gateway:latest
+```
+
+## Persistence
+
+The container stores SQLite data at `/data/spora.db`.
+
+`docker-compose.yml` mounts this path through:
+
+```yaml
+volumes:
+  - spora_data:/data
+```
+
+The volume persists provider keys, Spora keys, settings, model metadata, and request logs across restarts and image upgrades.
+
+## Environment
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SPORA_LISTEN_ADDR` | `0.0.0.0` | Interface the daemon binds inside the container |
+| `SPORA_PORT` | `4141` | Gateway port |
+| `SPORA_DB_PATH` | `/data/spora.db` | SQLite database path |
+| `SPORA_ANALYTICS_MODE` | `local` | Local analytics mode placeholder |
+| `RUST_LOG` | `info` | Log level |
+
+The default Compose file interpolates `SPORA_PORT`, so `SPORA_PORT=4242 ./install.sh` starts the gateway on `http://localhost:4242/v1`.
+
+## Platform Notes
+
+### macOS Apple Silicon
+
+Install Docker Desktop for Mac, start it, and run `./install.sh`. Docker builds the `linux/arm64` image.
+
+### macOS Intel
+
+Install Docker Desktop for Mac, start it, and run `./install.sh`. Docker builds the `linux/amd64` image.
+
+### Linux x64 and Ubuntu
+
+Install Docker Engine and the Docker Compose plugin, then run `./install.sh`.
+
+### Windows with Docker Desktop
+
+Use Docker Desktop with the WSL2 backend. The recommended path is to enable integration for Ubuntu/WSL and run:
+
+```bash
+./install.sh
+```
+
+inside the WSL Ubuntu shell.
+
+PowerShell from the repository also works:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\install-daemon.ps1
+.\install.ps1
 ```
 
----
+### WSL Ubuntu
 
-## Building the daemon binary from source
+Install Docker Desktop on Windows, enable WSL2 integration for the Ubuntu distro, then run `./install.sh` in WSL.
 
-```bash
-# Headless daemon — no Tauri, no GUI dependencies
-cd src-tauri
-cargo build --release --no-default-features --features daemon --bin spora-daemon
+## Network Exposure
 
-# The binary is at:
-./target/release/spora-daemon          # Linux / macOS
-./target/release/spora-daemon.exe      # Windows (cross-compiled)
+The default Compose file binds the host port to localhost only:
+
+```yaml
+ports:
+  - "127.0.0.1:4141:4141"
 ```
 
----
+For a server or LAN deployment, change it to:
 
-## Verifying the gateway
-
-```bash
-curl http://localhost:4141/health
-# {"status":"ok","service":"spora-gateway"}
+```yaml
+ports:
+  - "4141:4141"
 ```
 
----
+Use firewall rules and Spora key controls before exposing the gateway to other machines.
 
-## Corporate IT checklist
+## Provider Keys
 
-- [ ] Docker Engine 20.10+ (or Docker Desktop) installed on each developer machine, OR `spora-daemon` binary distributed via internal software catalogue
-- [ ] Outbound HTTPS allowed to provider APIs: `api.openai.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`, `openrouter.ai`
-- [ ] Port `4141` reachable on `localhost` (no local firewall blocking it)
-- [ ] Developer IDE configured with `base_url = http://localhost:4141/v1` and a `sk-spora-*` token
+The gateway can boot without provider API keys. Health checks and database initialization work immediately.
+
+Actual model calls require:
+
+1. A Spora key in the local database.
+2. At least one provider key configured for the target provider/model.
+
+Those keys are currently managed by the desktop app and stored in the same SQLite schema.

@@ -51,35 +51,52 @@ Gain full visibility into how your agents interact with LLMs.
 
 ## Getting Started
 
-### Prerequisites
-* Rust 1.77+
-* Node.js 18+
-* Xcode CLI (for macOS users)
+### Docker-first Gateway
 
-### Installation
+For a reliable first run on macOS, Linux, Ubuntu, Windows with Docker Desktop, or WSL Ubuntu:
+
 ```bash
-# Clone the repository and install dependencies
+./install.sh
+```
+
+When the script finishes:
+
+```text
+Spora is running.
+
+Base URL: http://localhost:4141/v1
+Health:   http://localhost:4141/health
+```
+
+The Docker path runs the headless Rust gateway only. Local state is persisted in the named Docker volume `spora_data`.
+
+### Desktop Development
+
+Use this path when developing the Tauri desktop UI:
+
+```bash
 npm install
-
-# Run in development mode
 npx tauri dev
+```
 
-# Build for production
+Build for production:
+
+```bash
 npx tauri build
 ```
 
 ## Integration Guide
-1. Launch Spora and initialize the local gateway.
-2. Add your provider keys in the Settings panel.
+1. Start the gateway with Docker or launch the desktop app.
+2. Add your provider keys in the desktop Keys Wallet.
 3. Generate a Sk-Spora token in the Keys Wallet.
 4. Configure your application or IDE (such as Cursor or Claude Code):
    * **Base URL**: `http://localhost:4141/v1`
    * **API Key**: `sk-spora-your-token`
 
-The gateway automatically handles protocol translation between various API formats and your selected provider backend.
+The gateway can boot without provider API keys. Model requests require a valid Spora key and a configured provider key.
 
 ## Security Architecture
-All cryptographic material and usage logs are stored in `~/.spora/spora.db`. Spora contains no telemetry and establishes no external network connections except those explicitly directed to your configured AI providers.
+All cryptographic material and usage logs are stored locally in SQLite. In Docker, the database lives in `/data/spora.db` inside the `spora_data` volume. Spora contains no telemetry and establishes no external network connections except those explicitly directed to your configured AI providers.
 
 ## License
 Published under the MIT License. Created by Fisarum.
